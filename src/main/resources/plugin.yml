@@ -4,3 +4,15 @@ main: hs.generalFeatures.GeneralFeatures
 api-version: '1.21'
 load: STARTUP
 authors: [ ___Pumpkinn ]
+
+commands:
+  grace:
+    description: Toggle PvP on or off
+    usage: /grace <on|off>
+    permission: generalfeatures.grace
+    permission-message: You don't have permission to use this command
+
+permissions:
+  generalfeatures.grace:
+    description: Allows toggling PvP grace period
+    default: op
