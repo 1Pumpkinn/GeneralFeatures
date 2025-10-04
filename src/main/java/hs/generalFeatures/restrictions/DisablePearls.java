@@ -1,6 +1,5 @@
 package hs.generalFeatures.restrictions;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Dispenser;
@@ -24,7 +23,7 @@ public class DisablePearls implements Listener {
 
     @EventHandler
     public void onDispense(BlockDispenseEvent event) {
-        if (!enabled) return; // If restriction is disabled, allow everything
+        if (!enabled) return;
 
         Block block = event.getBlock();
         ItemStack item = event.getItem();

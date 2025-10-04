@@ -7,9 +7,12 @@ import hs.generalFeatures.restrictions.DisableFireworks;
 import hs.generalFeatures.restrictions.DisablePearls;
 import hs.generalFeatures.restrictions.DisablePotTwo;
 import hs.generalFeatures.restrictions.EnableNDisableCommand;
+import hs.generalFeatures.restrictions.RestrictionsManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GeneralFeatures extends JavaPlugin {
+
+    private RestrictionsManager restrictionsManager;
 
     @Override
     public void onEnable() {
@@ -33,6 +36,9 @@ public final class GeneralFeatures extends JavaPlugin {
         getServer().getPluginManager().registerEvents(disableFireworks, this);
         getServer().getPluginManager().registerEvents(disablePearls, this);
 
+        // Initialize restrictions manager
+        restrictionsManager = new RestrictionsManager(disablePotTwo, disableFireworks, disablePearls);
+
         // Register restrictions command
         EnableNDisableCommand restrictionsCommand = new EnableNDisableCommand(disablePotTwo, disableFireworks, disablePearls);
         getCommand("restrictions").setExecutor(restrictionsCommand);
@@ -43,5 +49,13 @@ public final class GeneralFeatures extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("GeneralFeatures plugin has been disabled!");
+    }
+
+    /**
+     * Get the restrictions manager
+     * @return RestrictionsManager instance
+     */
+    public RestrictionsManager getRestrictionsManager() {
+        return restrictionsManager;
     }
 }

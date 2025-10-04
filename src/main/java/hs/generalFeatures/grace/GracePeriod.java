@@ -9,13 +9,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.jetbrains.annotations.NotNull;
 
 public class GracePeriod implements CommandExecutor, Listener {
 
     private boolean pvpEnabled = true;
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!sender.hasPermission("generalfeatures.grace")) {
             sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
             return true;
@@ -40,7 +41,7 @@ public class GracePeriod implements CommandExecutor, Listener {
     }
 
     @EventHandler
-    public void onEntityDamage(EntityDamageByEntityEvent event) {
+    public void onEntityDamage(@NotNull EntityDamageByEntityEvent event) {
         if (!pvpEnabled && event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
             event.setCancelled(true);
             event.getDamager().sendMessage(ChatColor.RED + "PvP is currently disabled!");
