@@ -11,8 +11,16 @@ commands:
     usage: /grace <on|off>
     permission: generalfeatures.grace
     permission-message: You don't have permission to use this command
+  restrictions:
+    description: Enable or disable various restrictions
+    usage: /restrictions <enable|disable> <potions|fireworks|pearls|all>
+    permission: generalfeatures.restrictions
+    permission-message: You don't have permission to use this command
 
 permissions:
   generalfeatures.grace:
     description: Allows toggling PvP grace period
+    default: op
+  generalfeatures.restrictions:
+    description: Allows managing game restrictions
     default: op
