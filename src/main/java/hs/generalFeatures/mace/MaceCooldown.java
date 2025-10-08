@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -19,14 +20,13 @@ public class MaceCooldown implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player)) return;
+        if (!(event.getDamager() instanceof Player damager)) return;
 
-        Player player = (Player) event.getDamager();
-        ItemStack item = player.getInventory().getItemInMainHand();
+        ItemStack item = damager.getInventory().getItemInMainHand();
 
         if (item.getType() != Material.MACE) return;
 
-        UUID playerId = player.getUniqueId();
+        UUID playerId = damager.getUniqueId();
 
         if (cooldowns.containsKey(playerId)) {
             long timeLeft = (cooldowns.get(playerId) + COOLDOWN_TIME) - System.currentTimeMillis();
@@ -34,7 +34,6 @@ public class MaceCooldown implements Listener {
             if (timeLeft > 0) {
                 event.setCancelled(true);
                 int secondsLeft = (int) (timeLeft / 1000);
-                player.sendMessage(ChatColor.RED + "Mace is on cooldown! " + secondsLeft + " seconds remaining.");
                 return;
             } else {
                 // Cooldown expired, clean up
@@ -42,11 +41,29 @@ public class MaceCooldown implements Listener {
             }
         }
 
+        // Check if target is using a shield
+        if (event.getEntity() instanceof Player target) {
+            PlayerInventory targetInv = target.getInventory();
+            
+            // Check if target is holding a shield in either hand
+            if (isShield(targetInv.getItemInMainHand()) || isShield(targetInv.getItemInOffHand())) {
+                // Set cooldown on the item in hotbar
+                damager.setCooldown(Material.MACE, COOLDOWN_TICKS);
+
+                // Track cooldown time
+                cooldowns.put(playerId, System.currentTimeMillis());
+                return;
+            }
+        }
+
         // Set cooldown on the item in hotbar
-        player.setCooldown(Material.MACE, COOLDOWN_TICKS);
+        damager.setCooldown(Material.MACE, COOLDOWN_TICKS);
 
         // Track cooldown time
         cooldowns.put(playerId, System.currentTimeMillis());
-        player.sendMessage(ChatColor.YELLOW + "Mace cooldown activated! 60 seconds until next use.");
+    }
+    
+    private boolean isShield(ItemStack item) {
+        return item != null && item.getType() == Material.SHIELD;
     }
 }

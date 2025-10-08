@@ -28,11 +28,11 @@ public class GracePeriod implements CommandExecutor, Listener {
         }
 
         if (args[0].equalsIgnoreCase("on")) {
-            pvpEnabled = true;
-            Bukkit.broadcastMessage(ChatColor.GREEN + "PvP has been enabled!");
-        } else if (args[0].equalsIgnoreCase("off")) {
             pvpEnabled = false;
-            Bukkit.broadcastMessage(ChatColor.RED + "PvP has been disabled!");
+            Bukkit.broadcastMessage(ChatColor.GOLD + "Grace period activated! PvP is now disabled.");
+        } else if (args[0].equalsIgnoreCase("off")) {
+            pvpEnabled = true;
+            Bukkit.broadcastMessage(ChatColor.GREEN + "Grace period ended! PvP is now enabled.");
         } else {
             sender.sendMessage(ChatColor.RED + "Usage: /grace <on|off>");
         }
@@ -44,7 +44,7 @@ public class GracePeriod implements CommandExecutor, Listener {
     public void onEntityDamage(@NotNull EntityDamageByEntityEvent event) {
         if (!pvpEnabled && event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
             event.setCancelled(true);
-            event.getDamager().sendMessage(ChatColor.RED + "PvP is currently disabled!");
+            event.getDamager().sendMessage(ChatColor.RED + "Grace period is active! PvP is disabled.");
         }
     }
 }

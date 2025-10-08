@@ -1,18 +1,15 @@
 package hs.generalFeatures;
 
+import hs.generalFeatures.end.EndControl;
 import hs.generalFeatures.grace.GracePeriod;
 import hs.generalFeatures.mace.DisableEnchants;
 import hs.generalFeatures.mace.MaceCooldown;
-import hs.generalFeatures.restrictions.DisableFireworks;
-import hs.generalFeatures.restrictions.DisablePearls;
-import hs.generalFeatures.restrictions.DisablePotTwo;
-import hs.generalFeatures.restrictions.EnableNDisableCommand;
-import hs.generalFeatures.restrictions.RestrictionsManager;
+import hs.generalFeatures.restrictions.ItemRestrictions;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GeneralFeatures extends JavaPlugin {
 
-    private RestrictionsManager restrictionsManager;
+    private EndControl endControl;
 
     @Override
     public void onEnable() {
@@ -27,35 +24,26 @@ public final class GeneralFeatures extends JavaPlugin {
         // Register disable mace enchants listener
         getServer().getPluginManager().registerEvents(new DisableEnchants(), this);
 
-        // Register restriction listeners (default: disabled)
-        DisablePotTwo disablePotTwo = new DisablePotTwo();
-        DisableFireworks disableFireworks = new DisableFireworks();
-        DisablePearls disablePearls = new DisablePearls();
-
-        getServer().getPluginManager().registerEvents(disablePotTwo, this);
-        getServer().getPluginManager().registerEvents(disableFireworks, this);
-        getServer().getPluginManager().registerEvents(disablePearls, this);
-
-        // Initialize restrictions manager
-        restrictionsManager = new RestrictionsManager(disablePotTwo, disableFireworks, disablePearls);
-
-        // Register restrictions command
-        EnableNDisableCommand restrictionsCommand = new EnableNDisableCommand(disablePotTwo, disableFireworks, disablePearls);
-        getCommand("restrictions").setExecutor(restrictionsCommand);
+        // Register item restrictions command and listener
+        ItemRestrictions itemRestrictions = new ItemRestrictions(this);
+        getCommand("restrictions").setExecutor(itemRestrictions);
+        getServer().getPluginManager().registerEvents(itemRestrictions, this);
+        
+        // Register end control command and listener
+        endControl = new EndControl(this);
+        getCommand("end").setExecutor(endControl);
+        getServer().getPluginManager().registerEvents(endControl, this);
 
         getLogger().info("GeneralFeatures plugin has been enabled!");
     }
 
     @Override
     public void onDisable() {
+        // Save end control state
+        if (endControl != null) {
+            endControl.saveConfig();
+        }
+        
         getLogger().info("GeneralFeatures plugin has been disabled!");
-    }
-
-    /**
-     * Get the restrictions manager
-     * @return RestrictionsManager instance
-     */
-    public RestrictionsManager getRestrictionsManager() {
-        return restrictionsManager;
     }
 }

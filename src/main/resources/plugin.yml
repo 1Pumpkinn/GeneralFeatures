@@ -16,6 +16,11 @@ commands:
     usage: /restrictions <enable|disable> <potions|fireworks|pearls|all>
     permission: generalfeatures.restrictions
     permission-message: You don't have permission to use this command
+  end:
+    description: Enable or disable access to the End dimension
+    usage: /end <enable|disable>
+    permission: generalfeatures.endcontrol
+    permission-message: You don't have permission to use this command
 
 permissions:
   generalfeatures.grace:
@@ -23,4 +28,10 @@ permissions:
     default: op
   generalfeatures.restrictions:
     description: Allows managing game restrictions
+    default: op
+  generalfeatures.endcontrol:
+    description: Allows controlling access to the End dimension
+    default: op
+  generalfeatures.endcontrol.notify:
+    description: Receive notifications about End dimension status changes
     default: op
