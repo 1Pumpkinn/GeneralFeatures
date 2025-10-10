@@ -135,23 +135,21 @@ public class EndControl implements CommandExecutor, Listener {
             event.getPlayer().sendMessage(Component.text("The End is currently disabled!").color(NamedTextColor.RED));
         }
     }
-    
+
     @EventHandler
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
         if (!endDisabled) return;
-        
+
         Entity entity = event.getEntity();
-        
+
         // Check if it's an end portal
         if (entity.getLocation().getBlock().getType().name().contains("END_PORTAL")) {
-            // Cancel all entities from entering the End (including players)
+            // Handle players with a message
             if (entity instanceof Player player) {
-                event.setCancelled(true);
                 player.sendMessage(Component.text("The End is currently disabled!").color(NamedTextColor.RED));
-            } else {
-                // Remove non-player entities (ender pearls, items, etc.)
-                entity.remove();
             }
+            // Remove all entities (players, ender pearls, items, mobs, etc.)
+            entity.remove();
         }
     }
 }

@@ -139,14 +139,14 @@ public class ItemRestrictions implements CommandExecutor, Listener {
         // Check for ender pearl usage
         if (enderPearlsRestricted && item.getType() == Material.ENDER_PEARL) {
             event.setCancelled(true);
-            player.sendMessage(Component.text("Ender pearls are currently restricted!").color(NamedTextColor.RED));
+            player.sendMessage(Component.text("Ender pearls are restricted!").color(NamedTextColor.RED));
             return;
         }
         
         // Check for firework usage
         if (fireworksRestricted && item.getType() == Material.FIREWORK_ROCKET) {
             event.setCancelled(true);
-            player.sendMessage(Component.text("Fireworks are currently restricted!").color(NamedTextColor.RED));
+            player.sendMessage(Component.text("Fireworks are restricted!").color(NamedTextColor.RED));
             return;
         }
         
@@ -154,7 +154,7 @@ public class ItemRestrictions implements CommandExecutor, Listener {
         if (potionsRestricted && (item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION)) {
             if (isPlusTwo(item)) {
                 event.setCancelled(true);
-                player.sendMessage(Component.text("Strength 2, Speed 2, and debuff potions are currently restricted!").color(NamedTextColor.RED));
+                player.sendMessage(Component.text("Strength 2, Speed 2, and debuff potions are restricted!").color(NamedTextColor.RED));
             }
         }
     }
@@ -169,7 +169,7 @@ public class ItemRestrictions implements CommandExecutor, Listener {
         if (item.getType() == Material.POTION || item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION) {
             if (isPlusTwo(item)) {
                 event.setCancelled(true);
-                player.sendMessage(Component.text("Strength 2, Speed 2, and debuff potions are currently restricted!").color(NamedTextColor.RED));
+                player.sendMessage(Component.text("Strength 2, Speed 2, and debuff potions are restricted!").color(NamedTextColor.RED));
             }
         }
     }
@@ -258,7 +258,6 @@ public class ItemRestrictions implements CommandExecutor, Listener {
                     effectType.equals("WEAKNESS") || 
                     effectType.equals("SLOW") || 
                     effectType.equals("HARM") || 
-                    effectType.equals("WITHER") ||
                     effectType.equals("LEVITATION") ||
                     effectType.equals("UNLUCK") ||
                     effectType.equals("BAD_LUCK")) {

@@ -21,6 +21,11 @@ commands:
     usage: /end <enable|disable>
     permission: generalfeatures.endcontrol
     permission-message: You don't have permission to use this command
+  teleportend:
+    description: Teleport to the End dimension
+    usage: /teleportend
+    permission: generalfeatures.teleportend
+    permission-message: You don't have permission to use this command
 
 permissions:
   generalfeatures.grace:
@@ -34,4 +39,7 @@ permissions:
     default: op
   generalfeatures.endcontrol.notify:
     description: Receive notifications about End dimension status changes
+    default: op
+  generalfeatures.teleportend:
+    description: Allows teleporting to the End dimension
     default: op
