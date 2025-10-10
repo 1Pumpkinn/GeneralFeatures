@@ -1,7 +1,8 @@
 package hs.generalFeatures.grace;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -18,23 +19,25 @@ public class GracePeriod implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!sender.hasPermission("generalfeatures.grace")) {
-            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            sender.sendMessage(Component.text("You don't have permission to use this command.").color(NamedTextColor.RED));
             return true;
         }
 
         if (args.length != 1) {
-            sender.sendMessage(ChatColor.RED + "Usage: /grace <on|off>");
+            sender.sendMessage(Component.text("Usage: /grace <on|off>").color(NamedTextColor.RED));
             return true;
         }
 
         if (args[0].equalsIgnoreCase("on")) {
             pvpEnabled = false;
-            Bukkit.broadcastMessage(ChatColor.GOLD + "Grace period activated! PvP is now disabled.");
+            Bukkit.broadcast(Component.text("Grace period activated! PvP is now disabled.").color(NamedTextColor.GOLD));
+            Bukkit.broadcast(Component.text("Players are protected from PvP damage.").color(NamedTextColor.YELLOW));
         } else if (args[0].equalsIgnoreCase("off")) {
             pvpEnabled = true;
-            Bukkit.broadcastMessage(ChatColor.GREEN + "Grace period ended! PvP is now enabled.");
+            Bukkit.broadcast(Component.text("Grace period ended! PvP is now enabled.").color(NamedTextColor.RED));
+            Bukkit.broadcast(Component.text("Players can now damage each other.").color(NamedTextColor.YELLOW));
         } else {
-            sender.sendMessage(ChatColor.RED + "Usage: /grace <on|off>");
+            sender.sendMessage(Component.text("Usage: /grace <on|off>").color(NamedTextColor.RED));
         }
 
         return true;
@@ -44,7 +47,7 @@ public class GracePeriod implements CommandExecutor, Listener {
     public void onEntityDamage(@NotNull EntityDamageByEntityEvent event) {
         if (!pvpEnabled && event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
             event.setCancelled(true);
-            event.getDamager().sendMessage(ChatColor.RED + "Grace period is active! PvP is disabled.");
+            event.getDamager().sendMessage(Component.text("Grace period is active! PvP is disabled.").color(NamedTextColor.RED));
         }
     }
 }

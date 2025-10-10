@@ -15,8 +15,12 @@ public final class GeneralFeatures extends JavaPlugin {
     public void onEnable() {
         // Register grace period command and listener
         GracePeriod gracePeriod = new GracePeriod();
-        getCommand("grace").setExecutor(gracePeriod);
+        if (getCommand("grace") != null) {
+            getCommand("grace").setExecutor(gracePeriod);
+        }
         getServer().getPluginManager().registerEvents(gracePeriod, this);
+
+        getServer().getPluginManager().registerEvents(new InvisibilityNameHider(), this);
 
         // Register mace cooldown listener
         getServer().getPluginManager().registerEvents(new MaceCooldown(), this);
@@ -26,12 +30,16 @@ public final class GeneralFeatures extends JavaPlugin {
 
         // Register item restrictions command and listener
         ItemRestrictions itemRestrictions = new ItemRestrictions(this);
-        getCommand("restrictions").setExecutor(itemRestrictions);
+        if (getCommand("restrictions") != null) {
+            getCommand("restrictions").setExecutor(itemRestrictions);
+        }
         getServer().getPluginManager().registerEvents(itemRestrictions, this);
         
         // Register end control command and listener
         endControl = new EndControl(this);
-        getCommand("end").setExecutor(endControl);
+        if (getCommand("end") != null) {
+            getCommand("end").setExecutor(endControl);
+        }
         getServer().getPluginManager().registerEvents(endControl, this);
 
         getLogger().info("GeneralFeatures plugin has been enabled!");

@@ -1,6 +1,5 @@
 package hs.generalFeatures.mace;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,7 +32,6 @@ public class MaceCooldown implements Listener {
 
             if (timeLeft > 0) {
                 event.setCancelled(true);
-                int secondsLeft = (int) (timeLeft / 1000);
                 return;
             } else {
                 // Cooldown expired, clean up

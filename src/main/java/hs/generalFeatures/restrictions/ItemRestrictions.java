@@ -154,7 +154,7 @@ public class ItemRestrictions implements CommandExecutor, Listener {
         if (potionsRestricted && (item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION)) {
             if (isPlusTwo(item)) {
                 event.setCancelled(true);
-                player.sendMessage(Component.text("+2 potions are currently restricted!").color(NamedTextColor.RED));
+                player.sendMessage(Component.text("Strength 2, Speed 2, and debuff potions are currently restricted!").color(NamedTextColor.RED));
             }
         }
     }
@@ -169,7 +169,7 @@ public class ItemRestrictions implements CommandExecutor, Listener {
         if (item.getType() == Material.POTION || item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION) {
             if (isPlusTwo(item)) {
                 event.setCancelled(true);
-                player.sendMessage(Component.text("+2 potions are currently restricted!").color(NamedTextColor.RED));
+                player.sendMessage(Component.text("Strength 2, Speed 2, and debuff potions are currently restricted!").color(NamedTextColor.RED));
             }
         }
     }
@@ -213,41 +213,57 @@ public class ItemRestrictions implements CommandExecutor, Listener {
             return false;
         }
         
-        // Check base potion type for strong variants (level 2)
+        // Check base potion type for specific banned potions
         if (potionMeta.getBasePotionType() != null) {
             String potionName = potionMeta.getBasePotionType().name();
-            // Strong potions are level 2 potions
-            if (potionName.contains("STRONG")) {
+            
+            // Ban strength 2 and speed 2 (strong variants)
+            if (potionName.contains("STRONG") && 
+                (potionName.contains("STRENGTH") || potionName.contains("SPEED"))) {
+                return true;
+            }
+            
+            // Ban turtle master (all levels)
+            if (potionName.contains("TURTLE_MASTER")) {
+                return true;
+            }
+            
+            // Ban debuff potions (all levels)
+            if (potionName.contains("POISON") || 
+                potionName.contains("WEAKNESS") || 
+                potionName.contains("SLOWNESS") || 
+                potionName.contains("HARMING") || 
+                potionName.contains("DECAY") ||
+                potionName.contains("LEVITATION") ||
+                potionName.contains("UNLUCK") ||
+                potionName.contains("BAD_LUCK")) {
                 return true;
             }
         }
         
-        // Check custom effects for level 2+ potions
+        // Check custom effects for specific banned effects at level 2+
         if (potionMeta.hasCustomEffects()) {
             for (PotionEffect effect : potionMeta.getCustomEffects()) {
-                // Level 2 = amplifier 1 (0-indexed), so amplifier >= 1 means level 2+
-                if (effect.getAmplifier() >= 1) {
+                String effectType = effect.getType().getKey().getKey().toUpperCase();
+                
+                // Ban strength 2 and speed 2 (amplifier >= 1 means level 2+)
+                if (effect.getAmplifier() >= 1 && 
+                    (effectType.equals("INCREASE_DAMAGE") || effectType.equals("SPEED"))) {
                     return true;
                 }
-            }
-        }
-        
-        // Also check base potion effects (from PotionData)
-        try {
-            // Get all effects from the base potion
-            if (potionMeta.getBasePotionType() != null) {
-                for (PotionEffect effect : potionMeta.getBasePotionType().getPotionEffects()) {
-                    // Check if any effect is level 2+ (amplifier >= 1)
-                    if (effect.getAmplifier() >= 1) {
-                        return true;
-                    }
+                
+                
+                // Ban debuff effects (all levels)
+                if (effectType.equals("POISON") || 
+                    effectType.equals("WEAKNESS") || 
+                    effectType.equals("SLOW") || 
+                    effectType.equals("HARM") || 
+                    effectType.equals("WITHER") ||
+                    effectType.equals("LEVITATION") ||
+                    effectType.equals("UNLUCK") ||
+                    effectType.equals("BAD_LUCK")) {
+                    return true;
                 }
-            }
-        } catch (Exception e) {
-            // Fallback: if we can't get base effects, just check the name
-            if (potionMeta.getBasePotionType() != null) {
-                String name = potionMeta.getBasePotionType().name();
-                return name.contains("STRONG");
             }
         }
         

@@ -11,14 +11,12 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -146,8 +144,12 @@ public class EndControl implements CommandExecutor, Listener {
         
         // Check if it's an end portal
         if (entity.getLocation().getBlock().getType().name().contains("END_PORTAL")) {
-            // Cancel ender pearls and other entities from entering the End
-            if (entity instanceof EnderPearl || !(entity instanceof Player)) {
+            // Cancel all entities from entering the End (including players)
+            if (entity instanceof Player player) {
+                event.setCancelled(true);
+                player.sendMessage(Component.text("The End is currently disabled!").color(NamedTextColor.RED));
+            } else {
+                // Remove non-player entities (ender pearls, items, etc.)
                 entity.remove();
             }
         }
