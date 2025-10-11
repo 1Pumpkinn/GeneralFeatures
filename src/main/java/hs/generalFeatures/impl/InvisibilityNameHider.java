@@ -1,4 +1,4 @@
-package hs.generalFeatures;
+package hs.generalFeatures.impl;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;

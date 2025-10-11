@@ -1,4 +1,4 @@
-package hs.generalFeatures.dimension;
+package hs.generalFeatures.impl.restrictions.dimension;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -52,7 +53,7 @@ public class DisableNether implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         if (!netherDisabled) return;
 
@@ -67,7 +68,7 @@ public class DisableNether implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
         if (!netherDisabled) return;
 
@@ -75,12 +76,26 @@ public class DisableNether implements Listener {
 
         // Check if it's a nether portal
         if (entity.getLocation().getBlock().getType().name().contains("NETHER_PORTAL")) {
-            // Handle players with a message
+            // Handle players - teleport them back instead of removing
             if (entity instanceof Player player) {
-                player.sendMessage(Component.text("The Nether is currently disabled during grace period!").color(NamedTextColor.RED));
+                // Find overworld
+                World overworld = null;
+                for (World world : Bukkit.getWorlds()) {
+                    if (world.getEnvironment() == World.Environment.NORMAL) {
+                        overworld = world;
+                        break;
+                    }
+                }
+
+                if (overworld != null) {
+                    // Teleport player to overworld spawn
+                    player.teleport(overworld.getSpawnLocation());
+                    player.sendMessage(Component.text("The Nether is currently disabled during grace period!").color(NamedTextColor.RED));
+                }
+            } else {
+                // For non-player entities (ender pearls, items, mobs), remove them
+                entity.remove();
             }
-            // Remove all entities (players, ender pearls, items, mobs, etc.)
-            entity.remove();
         }
     }
 }

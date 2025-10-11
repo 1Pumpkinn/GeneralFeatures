@@ -2,12 +2,13 @@ package hs.generalFeatures;
 
 import hs.generalFeatures.commands.BroadcastCommand;
 import hs.generalFeatures.commands.DimensionTeleporter;
-import hs.generalFeatures.dimension.DisableNether;
-import hs.generalFeatures.dimension.EndControl;
-import hs.generalFeatures.grace.GracePeriod;
-import hs.generalFeatures.mace.DisableEnchants;
-import hs.generalFeatures.mace.MaceCooldown;
-import hs.generalFeatures.restrictions.ItemRestrictions;
+import hs.generalFeatures.impl.restrictions.dimension.DisableNether;
+import hs.generalFeatures.impl.restrictions.dimension.EndControl;
+import hs.generalFeatures.impl.InvisibilityNameHider;
+import hs.generalFeatures.impl.grace.GracePeriod;
+import hs.generalFeatures.impl.mace.DisableEnchants;
+import hs.generalFeatures.impl.mace.MaceCooldown;
+import hs.generalFeatures.impl.restrictions.ItemRestrictions;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GeneralFeatures extends JavaPlugin {

@@ -1,4 +1,4 @@
-package hs.generalFeatures.restrictions;
+package hs.generalFeatures.impl.restrictions;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
