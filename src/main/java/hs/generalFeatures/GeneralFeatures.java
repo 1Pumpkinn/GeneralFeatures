@@ -2,6 +2,7 @@ package hs.generalFeatures;
 
 import hs.generalFeatures.commands.BroadcastCommand;
 import hs.generalFeatures.commands.DimensionTeleporter;
+import hs.generalFeatures.dimension.DisableNether;
 import hs.generalFeatures.dimension.EndControl;
 import hs.generalFeatures.grace.GracePeriod;
 import hs.generalFeatures.mace.DisableEnchants;
@@ -12,15 +13,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class GeneralFeatures extends JavaPlugin {
 
     private EndControl endControl;
+    private DisableNether netherControl;
 
     @Override
     public void onEnable() {
-        // Register grace period command and listener
-        GracePeriod gracePeriod = new GracePeriod(this);
+        // Initialize nether control
+        netherControl = new DisableNether();
+        getServer().getPluginManager().registerEvents(netherControl, this);
+
+        // Register grace period command and listener (with nether control)
+        GracePeriod gracePeriod = new GracePeriod(this, netherControl);
         if (getCommand("grace") != null) {
             getCommand("grace").setExecutor(gracePeriod);
         }
         getServer().getPluginManager().registerEvents(gracePeriod, this);
+
         getServer().getPluginManager().registerEvents(new InvisibilityNameHider(), this);
         getServer().getPluginManager().registerEvents(new MaceCooldown(), this);
         getServer().getPluginManager().registerEvents(new DisableEnchants(), this);

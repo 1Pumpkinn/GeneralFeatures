@@ -234,9 +234,7 @@ public class ItemRestrictions implements CommandExecutor, Listener {
                 potionName.contains("SLOWNESS") || 
                 potionName.contains("HARMING") || 
                 potionName.contains("DECAY") ||
-                potionName.contains("LEVITATION") ||
-                potionName.contains("UNLUCK") ||
-                potionName.contains("BAD_LUCK")) {
+                potionName.contains("UNLUCK")) {
                 return true;
             }
         }
@@ -258,9 +256,7 @@ public class ItemRestrictions implements CommandExecutor, Listener {
                     effectType.equals("WEAKNESS") || 
                     effectType.equals("SLOW") || 
                     effectType.equals("HARM") || 
-                    effectType.equals("LEVITATION") ||
-                    effectType.equals("UNLUCK") ||
-                    effectType.equals("BAD_LUCK")) {
+                    effectType.equals("UNLUCK")) {
                     return true;
                 }
             }
