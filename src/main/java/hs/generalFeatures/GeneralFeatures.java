@@ -1,7 +1,8 @@
 package hs.generalFeatures;
 
+import hs.generalFeatures.commands.BroadcastCommand;
 import hs.generalFeatures.commands.DimensionTeleporter;
-import hs.generalFeatures.end.EndControl;
+import hs.generalFeatures.dimension.EndControl;
 import hs.generalFeatures.grace.GracePeriod;
 import hs.generalFeatures.mace.DisableEnchants;
 import hs.generalFeatures.mace.MaceCooldown;
@@ -27,6 +28,10 @@ public final class GeneralFeatures extends JavaPlugin {
         // Register teleport end command
         if (getCommand("teleportend") != null) {
             getCommand("teleportend").setExecutor(new DimensionTeleporter());
+        }
+
+        if (getCommand("broadcast") != null) {
+            getCommand("broadcast").setExecutor(new BroadcastCommand());
         }
 
         // Register item restrictions command and listener

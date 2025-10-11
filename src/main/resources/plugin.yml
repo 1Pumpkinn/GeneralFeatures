@@ -26,6 +26,11 @@ commands:
     usage: /teleportend
     permission: generalfeatures.teleportend
     permission-message: You don't have permission to use this command
+  broadcast:
+    description: Send customizable broadcasts to all players
+    usage: /broadcast [options] <message>
+    permission: generalfeatures.broadcast
+    permission-message: You don't have permission to use this command
 
 permissions:
   generalfeatures.grace:
@@ -42,4 +47,7 @@ permissions:
     default: op
   generalfeatures.teleportend:
     description: Allows teleporting to the End dimension
+    default: op
+  generalfeatures.broadcast:
+    description: Allows sending broadcasts
     default: op
