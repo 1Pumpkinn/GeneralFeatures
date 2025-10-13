@@ -48,7 +48,7 @@ public class DisableNether implements Listener {
 
             for (Player player : netherWorld.getPlayers()) {
                 player.teleport(spawnLocation);
-                player.sendMessage(Component.text("You have been teleported out of the Nether because it has been disabled during grace period.").color(NamedTextColor.YELLOW));
+                player.sendMessage(Component.text("You have been teleported out of the Nether because it has been disabled.").color(NamedTextColor.YELLOW));
             }
         }
     }
@@ -64,7 +64,7 @@ public class DisableNether implements Listener {
 
             // Cancel teleport to the Nether
             event.setCancelled(true);
-            event.getPlayer().sendMessage(Component.text("The Nether is currently disabled during grace period!").color(NamedTextColor.RED));
+            event.getPlayer().sendMessage(Component.text("The Nether is currently disabled").color(NamedTextColor.RED));
         }
     }
 
@@ -76,22 +76,9 @@ public class DisableNether implements Listener {
 
         // Check if it's a nether portal
         if (entity.getLocation().getBlock().getType().name().contains("NETHER_PORTAL")) {
-            // Handle players - teleport them back instead of removing
+            // Handle players - just send a message, teleport is cancelled by onPlayerTeleport
             if (entity instanceof Player player) {
-                // Find overworld
-                World overworld = null;
-                for (World world : Bukkit.getWorlds()) {
-                    if (world.getEnvironment() == World.Environment.NORMAL) {
-                        overworld = world;
-                        break;
-                    }
-                }
-
-                if (overworld != null) {
-                    // Teleport player to overworld spawn
-                    player.teleport(overworld.getSpawnLocation());
-                    player.sendMessage(Component.text("The Nether is currently disabled during grace period!").color(NamedTextColor.RED));
-                }
+                player.sendMessage(Component.text("The Nether is currently disabled!").color(NamedTextColor.RED));
             } else {
                 // For non-player entities (ender pearls, items, mobs), remove them
                 entity.remove();

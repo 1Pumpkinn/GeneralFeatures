@@ -22,7 +22,7 @@ public class InvisibilityNameHider implements Listener {
             event.setCancelled(true);
 
             // Send the message without showing the player's name
-            Component hiddenMessage = Component.text("[???] ", NamedTextColor.GRAY)
+            Component hiddenMessage = Component.text("[???] ", NamedTextColor.WHITE)
                     .append(event.message());
 
             // Broadcast the anonymous message to all players

@@ -56,7 +56,6 @@ public final class GeneralFeatures extends JavaPlugin {
         }
         getServer().getPluginManager().registerEvents(endControl, this);
 
-
         getLogger().info("GeneralFeatures plugin has been enabled!");
     }
 

@@ -13,7 +13,7 @@ commands:
     permission-message: You don't have permission to use this command
   restrictions:
     description: Enable or disable various restrictions
-    usage: /restrictions <enable|disable> <potions|fireworks|pearls|all>
+    usage: /restrictions <enable|disable> <potions|fireworks|pearls|all> OR /restrictions potions <enable|disable>
     permission: generalfeatures.restrictions
     permission-message: You don't have permission to use this command
   end:

@@ -7,6 +7,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,6 +16,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.io.IOException;
 
 public class GracePeriod implements CommandExecutor, Listener {
 
@@ -23,9 +28,108 @@ public class GracePeriod implements CommandExecutor, Listener {
     private final JavaPlugin plugin;
     private final DisableNether netherControl;
 
+    private File configFile;
+    private FileConfiguration config;
+
+    // Store end times for timers
+    private long graceEndTime = -1; // -1 means not active
+    private long netherEndTime = -1; // -1 means not active
+
     public GracePeriod(JavaPlugin plugin, DisableNether netherControl) {
         this.plugin = plugin;
         this.netherControl = netherControl;
+        loadConfig();
+        restoreTimers();
+    }
+
+    private void loadConfig() {
+        configFile = new File(plugin.getDataFolder(), "grace_period.yml");
+
+        if (!configFile.exists()) {
+            if (!plugin.getDataFolder().exists()) {
+                plugin.getDataFolder().mkdirs();
+            }
+            try {
+                configFile.createNewFile();
+            } catch (IOException e) {
+                plugin.getLogger().severe("Could not create grace_period.yml file!");
+                return;
+            }
+        }
+
+        config = YamlConfiguration.loadConfiguration(configFile);
+    }
+
+    private void saveConfig() {
+        config.set("grace.pvp-enabled", pvpEnabled);
+        config.set("grace.grace-end-time", graceEndTime);
+        config.set("grace.nether-end-time", netherEndTime);
+        config.set("nether.disabled", netherControl.isNetherDisabled());
+
+        try {
+            config.save(configFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Could not save grace_period.yml file!");
+        }
+    }
+
+    private void restoreTimers() {
+        pvpEnabled = config.getBoolean("grace.pvp-enabled", true);
+        graceEndTime = config.getLong("grace.grace-end-time", -1);
+        netherEndTime = config.getLong("grace.nether-end-time", -1);
+        boolean netherDisabled = config.getBoolean("nether.disabled", false);
+
+        long currentTime = System.currentTimeMillis();
+
+        // Restore grace period timer if it hasn't expired
+        if (graceEndTime > currentTime && !pvpEnabled) {
+            long remainingTime = graceEndTime - currentTime;
+            long remainingMinutes = remainingTime / (60 * 1000);
+
+            startGraceTimer(remainingMinutes);
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.broadcast(Component.text("Grace period restored with " + formatTime(remainingMinutes) + " remaining!").color(NamedTextColor.GOLD));
+                Bukkit.broadcast(Component.text("Players are protected from PvP damage.").color(NamedTextColor.YELLOW));
+            });
+        } else if (!pvpEnabled) {
+            // Grace period was infinite, keep it disabled
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.broadcast(Component.text("Grace period restored (indefinite)!").color(NamedTextColor.GOLD));
+                Bukkit.broadcast(Component.text("Players are protected from PvP damage.").color(NamedTextColor.YELLOW));
+            });
+        } else {
+            // Grace period expired, clear it
+            graceEndTime = -1;
+        }
+
+        // Restore nether disabled state
+        if (netherDisabled) {
+            netherControl.setNetherDisabled(true);
+
+            // Restore nether timer if it hasn't expired
+            if (netherEndTime > currentTime) {
+                long remainingTime = netherEndTime - currentTime;
+                long remainingMinutes = remainingTime / (60 * 1000);
+
+                startNetherTimer(remainingMinutes);
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    Bukkit.broadcast(Component.text("The Nether remains disabled with " + formatTime(remainingMinutes) + " remaining!").color(NamedTextColor.YELLOW));
+                });
+            } else if (netherEndTime == -1) {
+                // Nether was disabled indefinitely
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    Bukkit.broadcast(Component.text("The Nether remains disabled (indefinite)!").color(NamedTextColor.YELLOW));
+                });
+            } else {
+                // Nether timer expired, enable it
+                netherControl.setNetherDisabled(false);
+                netherEndTime = -1;
+            }
+        }
+
+        saveConfig();
     }
 
     @Override
@@ -81,29 +185,39 @@ public class GracePeriod implements CommandExecutor, Listener {
             if (graceMinutes != 0) {
                 pvpEnabled = false;
                 if (graceMinutes > 0) {
+                    graceEndTime = System.currentTimeMillis() + (graceMinutes * 60 * 1000);
                     startGraceTimer(graceMinutes);
                     Bukkit.broadcast(Component.text("Grace period activated for " + formatTime(graceMinutes) + "!").color(NamedTextColor.GOLD));
                 } else {
+                    graceEndTime = -1; // Infinite
                     Bukkit.broadcast(Component.text("Grace period activated indefinitely!").color(NamedTextColor.GOLD));
                 }
                 Bukkit.broadcast(Component.text("Players are protected from PvP damage.").color(NamedTextColor.YELLOW));
+            } else {
+                graceEndTime = -1;
             }
 
             // Enable nether disable (unless 0)
             if (netherMinutes != 0) {
                 netherControl.setNetherDisabled(true);
                 if (netherMinutes > 0) {
+                    netherEndTime = System.currentTimeMillis() + (netherMinutes * 60 * 1000);
                     startNetherTimer(netherMinutes);
                     Bukkit.broadcast(Component.text("The Nether has been disabled for " + formatTime(netherMinutes) + "!").color(NamedTextColor.YELLOW));
                 } else {
+                    netherEndTime = -1; // Infinite
                     Bukkit.broadcast(Component.text("The Nether has been disabled indefinitely!").color(NamedTextColor.YELLOW));
                 }
+            } else {
+                netherEndTime = -1;
             }
 
             // If both are 0, inform user
             if (graceMinutes == 0 && netherMinutes == 0) {
                 sender.sendMessage(Component.text("Both grace period and nether disable are set to 0. Nothing was changed.").color(NamedTextColor.RED));
             }
+
+            saveConfig();
 
         } else if (args[0].equalsIgnoreCase("off")) {
             // Cancel any existing timers
@@ -117,11 +231,15 @@ public class GracePeriod implements CommandExecutor, Listener {
             }
 
             pvpEnabled = true;
+            graceEndTime = -1;
+            netherEndTime = -1;
             netherControl.setNetherDisabled(false);
 
             Bukkit.broadcast(Component.text("Grace period ended! PvP is now enabled.").color(NamedTextColor.RED));
             Bukkit.broadcast(Component.text("Players can now damage each other.").color(NamedTextColor.YELLOW));
             Bukkit.broadcast(Component.text("The Nether has been enabled.").color(NamedTextColor.GREEN));
+
+            saveConfig();
         } else {
             sender.sendMessage(Component.text("Usage: /grace <on|off> [grace-time] [nether-time]").color(NamedTextColor.RED));
         }
@@ -136,10 +254,12 @@ public class GracePeriod implements CommandExecutor, Listener {
             @Override
             public void run() {
                 pvpEnabled = true;
+                graceEndTime = -1;
 
                 Bukkit.broadcast(Component.text("Grace period has ended! PvP is now enabled.").color(NamedTextColor.RED));
-                Bukkit.broadcast(Component.text("Players can now damage each other.").color(NamedTextColor.YELLOW));
                 graceTask = null;
+
+                saveConfig();
             }
         };
 
@@ -153,9 +273,12 @@ public class GracePeriod implements CommandExecutor, Listener {
             @Override
             public void run() {
                 netherControl.setNetherDisabled(false);
+                netherEndTime = -1;
 
                 Bukkit.broadcast(Component.text("The Nether has been enabled.").color(NamedTextColor.GREEN));
                 netherTask = null;
+
+                saveConfig();
             }
         };
 
@@ -205,7 +328,20 @@ public class GracePeriod implements CommandExecutor, Listener {
     public void onEntityDamage(@NotNull EntityDamageByEntityEvent event) {
         if (!pvpEnabled && event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
             event.setCancelled(true);
-            event.getDamager().sendMessage(Component.text("Grace period is active! PvP is disabled.").color(NamedTextColor.RED));
+            event.getDamager().sendMessage(Component.text("Grace period is on! PvP is disabled.").color(NamedTextColor.RED));
         }
+    }
+
+    public void onDisable() {
+        // Cancel any running tasks
+        if (graceTask != null) {
+            graceTask.cancel();
+        }
+        if (netherTask != null) {
+            netherTask.cancel();
+        }
+
+        // Save current state
+        saveConfig();
     }
 }
