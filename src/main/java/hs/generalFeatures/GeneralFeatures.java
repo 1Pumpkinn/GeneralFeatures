@@ -46,6 +46,7 @@ public final class GeneralFeatures extends JavaPlugin {
         ItemRestrictions itemRestrictions = new ItemRestrictions(this);
         if (getCommand("restrictions") != null) {
             getCommand("restrictions").setExecutor(itemRestrictions);
+            getCommand("restrictions").setTabCompleter(itemRestrictions); // Add this line
         }
         getServer().getPluginManager().registerEvents(itemRestrictions, this);
 
