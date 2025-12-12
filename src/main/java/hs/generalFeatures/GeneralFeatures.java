@@ -10,6 +10,7 @@ import hs.generalFeatures.impl.restrictions.ItemRestrictions;
 import hs.generalFeatures.impl.restrictions.dimension.DisableNether;
 import hs.generalFeatures.impl.restrictions.dimension.EndControl;
 import hs.generalFeatures.listeners.DisableMaceDamage;
+import hs.generalFeatures.managers.listeners.PlayerDeathListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GeneralFeatures extends JavaPlugin {
@@ -33,6 +34,7 @@ public final class GeneralFeatures extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InvisibilityNameHider(), this);
         getServer().getPluginManager().registerEvents(new MaceCooldown(), this);
         getServer().getPluginManager().registerEvents(new DisableEnchants(), this);
+        getServer().getPluginManager().registerEvents(new PlayerDeathListener(), this);
 
         // Register teleport end command
         if (getCommand("teleportend") != null) {
