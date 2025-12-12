@@ -1,4 +1,4 @@
-package hs.generalFeatures.managers.listeners;
+package saturn.generalFeatures.listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;

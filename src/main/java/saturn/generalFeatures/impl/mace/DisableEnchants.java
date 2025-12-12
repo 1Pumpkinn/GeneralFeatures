@@ -1,4 +1,4 @@
-package hs.generalFeatures.impl.mace;
+package saturn.generalFeatures.impl.mace;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

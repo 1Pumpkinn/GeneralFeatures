@@ -1,16 +1,16 @@
-package hs.generalFeatures;
+package saturn.generalFeatures;
 
-import hs.generalFeatures.commands.BroadcastCommand;
-import hs.generalFeatures.commands.DimensionTeleporter;
-import hs.generalFeatures.impl.InvisibilityNameHider;
-import hs.generalFeatures.impl.grace.GracePeriod;
-import hs.generalFeatures.impl.mace.DisableEnchants;
-import hs.generalFeatures.impl.mace.MaceCooldown;
-import hs.generalFeatures.impl.restrictions.ItemRestrictions;
-import hs.generalFeatures.impl.restrictions.dimension.DisableNether;
-import hs.generalFeatures.impl.restrictions.dimension.EndControl;
-import hs.generalFeatures.listeners.DisableMaceDamage;
-import hs.generalFeatures.managers.listeners.PlayerDeathListener;
+import saturn.generalFeatures.commands.BroadcastCommand;
+import saturn.generalFeatures.commands.DimensionTeleporter;
+import saturn.generalFeatures.impl.InvisibilityNameHider;
+import saturn.generalFeatures.impl.grace.GracePeriod;
+import saturn.generalFeatures.impl.mace.DisableEnchants;
+import saturn.generalFeatures.impl.mace.MaceCooldown;
+import saturn.generalFeatures.impl.restrictions.ItemRestrictions;
+import saturn.generalFeatures.impl.restrictions.dimension.DisableNether;
+import saturn.generalFeatures.impl.restrictions.dimension.EndControl;
+import saturn.generalFeatures.listeners.DisableMaceDamage;
+import saturn.generalFeatures.listeners.PlayerDeathListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GeneralFeatures extends JavaPlugin {

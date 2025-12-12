@@ -1,6 +1,6 @@
 name: GeneralFeatures
 version: '1.0-SNAPSHOT'
-main: hs.generalFeatures.GeneralFeatures
+main: saturn.generalFeatures.GeneralFeatures
 api-version: '1.21'
 load: STARTUP
 authors: [ ___Pumpkinn ]

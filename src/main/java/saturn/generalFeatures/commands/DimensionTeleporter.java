@@ -1,4 +1,4 @@
-package hs.generalFeatures.commands;
+package saturn.generalFeatures.commands;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

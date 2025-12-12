@@ -1,6 +1,6 @@
-package hs.generalFeatures.impl.grace;
+package saturn.generalFeatures.impl.grace;
 
-import hs.generalFeatures.impl.restrictions.dimension.DisableNether;
+import saturn.generalFeatures.impl.restrictions.dimension.DisableNether;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
