@@ -9,6 +9,7 @@ import hs.generalFeatures.impl.mace.MaceCooldown;
 import hs.generalFeatures.impl.restrictions.ItemRestrictions;
 import hs.generalFeatures.impl.restrictions.dimension.DisableNether;
 import hs.generalFeatures.impl.restrictions.dimension.EndControl;
+import hs.generalFeatures.listeners.DisableMaceDamage;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GeneralFeatures extends JavaPlugin {
@@ -54,6 +55,8 @@ public final class GeneralFeatures extends JavaPlugin {
         endControl = new EndControl(this);
         if (getCommand("end") != null) {
             getCommand("end").setExecutor(endControl);
+            getServer().getPluginManager().registerEvents(new DisableMaceDamage(), this);
+
         }
         getServer().getPluginManager().registerEvents(endControl, this);
 
