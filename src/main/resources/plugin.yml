@@ -7,48 +7,69 @@ authors: [ ___Pumpkinn ]
 
 commands:
   grace:
-    description: Toggle PvP on or off
-    usage: /grace <on|off>
+    description: Control PvP protection grace period
+    usage: /grace <enable|disable|status> [time]
+    aliases: [graceperiod]
     permission: generalfeatures.grace
     permission-message: You don't have permission to use this command
-  restrictions:
-    description: Enable or disable various restrictions
-    usage: /restrictions <enable|disable> <potions|fireworks|pearls|all> OR /restrictions potions <enable|disable>
-    permission: generalfeatures.restrictions
+
+  nether:
+    description: Control access to the Nether dimension
+    usage: /nether <enable|disable|status> [time]
+    permission: generalfeatures.nether
     permission-message: You don't have permission to use this command
+
   end:
-    description: Enable or disable access to the End dimension
-    usage: /end <enable|disable>
+    description: Control access to the End dimension
+    usage: /end <enable|disable|status> [time]
     permission: generalfeatures.endcontrol
     permission-message: You don't have permission to use this command
+
+  restrictions:
+    description: Manage item restrictions (pearls, fireworks, potions)
+    usage: /restrictions <enable|disable|potion|list> [options]
+    permission: generalfeatures.restrictions
+    permission-message: You don't have permission to use this command
+
   teleportend:
     description: Teleport to the End dimension
     usage: /teleportend
+    aliases: [tpend]
     permission: generalfeatures.teleportend
     permission-message: You don't have permission to use this command
+
   broadcast:
     description: Send customizable broadcasts to all players
     usage: /broadcast [options] <message>
+    aliases: [bc, announce]
     permission: generalfeatures.broadcast
     permission-message: You don't have permission to use this command
 
-
 permissions:
   generalfeatures.grace:
-    description: Allows toggling PvP grace period
+    description: Allows controlling PvP grace period
     default: op
-  generalfeatures.restrictions:
-    description: Allows managing game restrictions
+
+  generalfeatures.nether:
+    description: Allows controlling access to the Nether
     default: op
+
   generalfeatures.endcontrol:
     description: Allows controlling access to the End dimension
     default: op
+
   generalfeatures.endcontrol.notify:
     description: Receive notifications about End dimension status changes
     default: op
+
+  generalfeatures.restrictions:
+    description: Allows managing game restrictions
+    default: op
+
   generalfeatures.teleportend:
     description: Allows teleporting to the End dimension
     default: op
+
   generalfeatures.broadcast:
     description: Allows sending broadcasts
     default: op

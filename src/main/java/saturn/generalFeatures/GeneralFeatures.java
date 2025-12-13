@@ -17,30 +17,50 @@ public final class GeneralFeatures extends JavaPlugin {
 
     private EndControl endControl;
     private DisableNether netherControl;
+    private GracePeriod gracePeriod;
 
     @Override
     public void onEnable() {
-        // Initialize nether control
-        netherControl = new DisableNether();
+        // Initialize dimension controls
+        netherControl = new DisableNether(this);
         getServer().getPluginManager().registerEvents(netherControl, this);
 
-        // Register grace period command and listener (with nether control)
-        GracePeriod gracePeriod = new GracePeriod(this, netherControl);
+        endControl = new EndControl(this);
+        getServer().getPluginManager().registerEvents(endControl, this);
+
+        // Register grace period command and listener
+        gracePeriod = new GracePeriod(this, netherControl);
         if (getCommand("grace") != null) {
             getCommand("grace").setExecutor(gracePeriod);
+            getCommand("grace").setTabCompleter(gracePeriod);
         }
         getServer().getPluginManager().registerEvents(gracePeriod, this);
 
+        // Register nether command
+        if (getCommand("nether") != null) {
+            getCommand("nether").setExecutor(netherControl);
+            getCommand("nether").setTabCompleter(netherControl);
+        }
+
+        // Register end command
+        if (getCommand("end") != null) {
+            getCommand("end").setExecutor(endControl);
+            getCommand("end").setTabCompleter(endControl);
+        }
+
+        // Register other features
         getServer().getPluginManager().registerEvents(new InvisibilityNameHider(), this);
         getServer().getPluginManager().registerEvents(new MaceCooldown(), this);
         getServer().getPluginManager().registerEvents(new DisableEnchants(), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(), this);
+        getServer().getPluginManager().registerEvents(new DisableMaceDamage(), this);
 
         // Register teleport end command
         if (getCommand("teleportend") != null) {
             getCommand("teleportend").setExecutor(new DimensionTeleporter());
         }
 
+        // Register broadcast command
         if (getCommand("broadcast") != null) {
             getCommand("broadcast").setExecutor(new BroadcastCommand());
         }
@@ -49,27 +69,24 @@ public final class GeneralFeatures extends JavaPlugin {
         ItemRestrictions itemRestrictions = new ItemRestrictions(this);
         if (getCommand("restrictions") != null) {
             getCommand("restrictions").setExecutor(itemRestrictions);
-            getCommand("restrictions").setTabCompleter(itemRestrictions); // Add this line
+            getCommand("restrictions").setTabCompleter(itemRestrictions);
         }
         getServer().getPluginManager().registerEvents(itemRestrictions, this);
-
-        // Register end control command and listener
-        endControl = new EndControl(this);
-        if (getCommand("end") != null) {
-            getCommand("end").setExecutor(endControl);
-            getServer().getPluginManager().registerEvents(new DisableMaceDamage(), this);
-
-        }
-        getServer().getPluginManager().registerEvents(endControl, this);
 
         getLogger().info("GeneralFeatures plugin has been enabled!");
     }
 
     @Override
     public void onDisable() {
-        // Save end control state
+        // Save states
         if (endControl != null) {
-            endControl.saveConfig();
+            endControl.onDisable();
+        }
+        if (netherControl != null) {
+            netherControl.onDisable();
+        }
+        if (gracePeriod != null) {
+            gracePeriod.onDisable();
         }
 
         getLogger().info("GeneralFeatures plugin has been disabled!");
