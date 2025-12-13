@@ -34,6 +34,7 @@ public final class GeneralFeatures extends JavaPlugin {
             getCommand("grace").setExecutor(gracePeriod);
             getCommand("grace").setTabCompleter(gracePeriod);
         }
+
         getServer().getPluginManager().registerEvents(gracePeriod, this);
 
         // Register nether command

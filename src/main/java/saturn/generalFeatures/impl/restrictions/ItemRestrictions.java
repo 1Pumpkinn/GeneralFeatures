@@ -37,11 +37,8 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
     private File configFile;
     private FileConfiguration config;
 
-    // Restriction settings
     private boolean enderPearlsRestricted = true;
     private boolean fireworksRestricted = true;
-
-    // Store restricted potion effect types by their key
     private Set<String> restrictedPotionEffects = new HashSet<>();
 
     public ItemRestrictions(JavaPlugin plugin) {
@@ -69,15 +66,12 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
         config = YamlConfiguration.loadConfiguration(configFile);
 
-        // Load settings
         enderPearlsRestricted = config.getBoolean("restrictions.ender-pearls", true);
         fireworksRestricted = config.getBoolean("restrictions.fireworks", true);
 
-        // Load restricted potion effects
         List<String> loadedEffects = config.getStringList("restrictions.potion-effects");
         restrictedPotionEffects = new HashSet<>(loadedEffects);
 
-        // If no effects are loaded, add defaults
         if (restrictedPotionEffects.isEmpty()) {
             restrictedPotionEffects.add("strength:2");
             restrictedPotionEffects.add("speed:2");
@@ -118,90 +112,134 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
         String subCommand = args[0].toLowerCase();
 
-        switch (subCommand) {
-            case "enable":
-            case "disable":
-                return handleToggle(sender, args);
-            case "potion":
-            case "potions":
-                return handlePotionCommand(sender, args);
-            case "list":
-                return handleList(sender);
-            default:
+        return switch (subCommand) {
+            case "enable", "on" -> handleEnable(sender, args);
+            case "disable", "off" -> handleDisable(sender, args);
+            case "add" -> handleAdd(sender, args);
+            case "remove", "delete" -> handleRemove(sender, args);
+            case "clear" -> handleClear(sender, args);
+            case "list", "show" -> handleList(sender);
+            case "reset" -> handleReset(sender);
+            default -> {
                 sendUsage(sender);
-                return true;
-        }
+                yield true;
+            }
+        };
     }
 
-    private boolean handleToggle(CommandSender sender, String[] args) {
-        if (args.length != 2) {
-            sender.sendMessage(Component.text("Usage: /restrictions <enable|disable> <pearls|fireworks|all>").color(NamedTextColor.RED));
-            return true;
-        }
-
-        boolean enable = args[0].equalsIgnoreCase("enable");
-        String item = args[1].toLowerCase();
-
-        switch (item) {
-            case "pearls":
-                enderPearlsRestricted = enable;
-                sender.sendMessage(Component.text("Ender pearl restrictions " + (enable ? "enabled" : "disabled") + "!").color(NamedTextColor.GREEN));
-                break;
-            case "fireworks":
-                fireworksRestricted = enable;
-                sender.sendMessage(Component.text("Firework restrictions " + (enable ? "enabled" : "disabled") + "!").color(NamedTextColor.GREEN));
-                break;
-            case "all":
-                enderPearlsRestricted = enable;
-                fireworksRestricted = enable;
-                sender.sendMessage(Component.text("All item restrictions " + (enable ? "enabled" : "disabled") + "!").color(NamedTextColor.GREEN));
-                break;
-            default:
-                sender.sendMessage(Component.text("Unknown item type: " + item).color(NamedTextColor.RED));
-                sender.sendMessage(Component.text("Available: pearls, fireworks, all").color(NamedTextColor.YELLOW));
-                return true;
-        }
-
-        saveConfig();
-        return true;
-    }
-
-    private boolean handlePotionCommand(CommandSender sender, String[] args) {
+    private boolean handleEnable(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /restrictions potion <add|remove|clear|list> [effect] [level]").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("Usage: /restrictions enable <pearls|fireworks|all>").color(NamedTextColor.RED));
             return true;
         }
 
-        String action = args[1].toLowerCase();
-
-        switch (action) {
-            case "add":
-                return handlePotionAdd(sender, args);
-            case "remove":
-                return handlePotionRemove(sender, args);
-            case "clear":
-                return handlePotionClear(sender);
-            case "list":
-                return handlePotionList(sender);
-            default:
-                sender.sendMessage(Component.text("Unknown action: " + action).color(NamedTextColor.RED));
-                sender.sendMessage(Component.text("Available: add, remove, clear, list").color(NamedTextColor.YELLOW));
-                return true;
-        }
+        String item = args[1].toLowerCase();
+        return switch (item) {
+            case "pearls", "pearl" -> {
+                enderPearlsRestricted = true;
+                sender.sendMessage(Component.text("✓ Ender pearls are now restricted").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            case "fireworks", "firework" -> {
+                fireworksRestricted = true;
+                sender.sendMessage(Component.text("✓ Fireworks are now restricted").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            case "all" -> {
+                enderPearlsRestricted = true;
+                fireworksRestricted = true;
+                sender.sendMessage(Component.text("✓ All items are now restricted").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            default -> {
+                sender.sendMessage(Component.text("Unknown item: " + item).color(NamedTextColor.RED));
+                sender.sendMessage(Component.text("Available: pearls, fireworks, all").color(NamedTextColor.YELLOW));
+                yield true;
+            }
+        };
     }
 
-    private boolean handlePotionAdd(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Component.text("Usage: /restrictions potion add <effect> [level]").color(NamedTextColor.RED));
-            sender.sendMessage(Component.text("Example: /restrictions potion add strength 2").color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("Example: /restrictions potion add poison (all levels)").color(NamedTextColor.GRAY));
+    private boolean handleDisable(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /restrictions disable <pearls|fireworks|all>").color(NamedTextColor.RED));
             return true;
         }
 
-        String effectName = args[2].toLowerCase();
+        String item = args[1].toLowerCase();
+        return switch (item) {
+            case "pearls", "pearl" -> {
+                enderPearlsRestricted = false;
+                sender.sendMessage(Component.text("✓ Ender pearls are now allowed").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            case "fireworks", "firework" -> {
+                fireworksRestricted = false;
+                sender.sendMessage(Component.text("✓ Fireworks are now allowed").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            case "all" -> {
+                enderPearlsRestricted = false;
+                fireworksRestricted = false;
+                sender.sendMessage(Component.text("✓ All items are now allowed").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            default -> {
+                sender.sendMessage(Component.text("Unknown item: " + item).color(NamedTextColor.RED));
+                sender.sendMessage(Component.text("Available: pearls, fireworks, all").color(NamedTextColor.YELLOW));
+                yield true;
+            }
+        };
+    }
 
-        // Validate effect exists
+    private boolean handleAdd(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /restrictions add <effect> [level] or <effect1,effect2,...>").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("Examples:").color(NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("  /restrictions add strength 2").color(NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  /restrictions add poison").color(NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  /restrictions add poison,weakness,wither").color(NamedTextColor.GRAY));
+            return true;
+        }
+
+        String effectArg = args[1].toLowerCase();
+
+        // Check if multiple effects (comma-separated)
+        if (effectArg.contains(",")) {
+            String[] effects = effectArg.split(",");
+            int added = 0;
+            List<String> failed = new ArrayList<>();
+
+            for (String effect : effects) {
+                effect = effect.trim();
+                if (PotionEffectType.getByName(effect) != null) {
+                    if (restrictedPotionEffects.add(effect)) {
+                        added++;
+                    }
+                } else {
+                    failed.add(effect);
+                }
+            }
+
+            if (added > 0) {
+                sender.sendMessage(Component.text("✓ Added " + added + " potion restriction(s)").color(NamedTextColor.GREEN));
+                saveConfig();
+            }
+            if (!failed.isEmpty()) {
+                sender.sendMessage(Component.text("✗ Invalid effects: " + String.join(", ", failed)).color(NamedTextColor.RED));
+            }
+            return true;
+        }
+
+        // Single effect
+        String effectName = effectArg;
         PotionEffectType effectType = PotionEffectType.getByName(effectName);
+
         if (effectType == null) {
             sender.sendMessage(Component.text("Unknown potion effect: " + effectName).color(NamedTextColor.RED));
             sender.sendMessage(Component.text("Use tab completion to see available effects").color(NamedTextColor.YELLOW));
@@ -209,16 +247,16 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         }
 
         String restriction;
-        if (args.length >= 4) {
+        if (args.length >= 3) {
             try {
-                int level = Integer.parseInt(args[3]);
+                int level = Integer.parseInt(args[2]);
                 if (level < 1) {
                     sender.sendMessage(Component.text("Level must be 1 or higher!").color(NamedTextColor.RED));
                     return true;
                 }
                 restriction = effectName + ":" + level;
             } catch (NumberFormatException e) {
-                sender.sendMessage(Component.text("Invalid level: " + args[3]).color(NamedTextColor.RED));
+                sender.sendMessage(Component.text("Invalid level: " + args[2]).color(NamedTextColor.RED));
                 return true;
             }
         } else {
@@ -226,7 +264,7 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         }
 
         if (restrictedPotionEffects.add(restriction)) {
-            sender.sendMessage(Component.text("Added restriction: " + restriction).color(NamedTextColor.GREEN));
+            sender.sendMessage(Component.text("✓ Added restriction: " + restriction).color(NamedTextColor.GREEN));
             saveConfig();
         } else {
             sender.sendMessage(Component.text("This restriction already exists!").color(NamedTextColor.YELLOW));
@@ -235,23 +273,49 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         return true;
     }
 
-    private boolean handlePotionRemove(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage(Component.text("Usage: /restrictions potion remove <effect> [level]").color(NamedTextColor.RED));
-            sender.sendMessage(Component.text("Example: /restrictions potion remove strength 2").color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("Example: /restrictions potion remove poison").color(NamedTextColor.GRAY));
+    private boolean handleRemove(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /restrictions remove <effect> [level] or <effect1,effect2,...>").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("Examples:").color(NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("  /restrictions remove strength 2").color(NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  /restrictions remove poison").color(NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  /restrictions remove poison,weakness,wither").color(NamedTextColor.GRAY));
             return true;
         }
 
-        String effectName = args[2].toLowerCase();
+        String effectArg = args[1].toLowerCase();
 
+        // Check if multiple effects (comma-separated)
+        if (effectArg.contains(",")) {
+            String[] effects = effectArg.split(",");
+            int removed = 0;
+
+            for (String effect : effects) {
+                effect = effect.trim();
+                if (restrictedPotionEffects.remove(effect)) {
+                    removed++;
+                }
+            }
+
+            if (removed > 0) {
+                sender.sendMessage(Component.text("✓ Removed " + removed + " potion restriction(s)").color(NamedTextColor.GREEN));
+                saveConfig();
+            } else {
+                sender.sendMessage(Component.text("No matching restrictions found").color(NamedTextColor.YELLOW));
+            }
+            return true;
+        }
+
+        // Single effect
+        String effectName = effectArg;
         String restriction;
-        if (args.length >= 4) {
+
+        if (args.length >= 3) {
             try {
-                int level = Integer.parseInt(args[3]);
+                int level = Integer.parseInt(args[2]);
                 restriction = effectName + ":" + level;
             } catch (NumberFormatException e) {
-                sender.sendMessage(Component.text("Invalid level: " + args[3]).color(NamedTextColor.RED));
+                sender.sendMessage(Component.text("Invalid level: " + args[2]).color(NamedTextColor.RED));
                 return true;
             }
         } else {
@@ -259,7 +323,7 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         }
 
         if (restrictedPotionEffects.remove(restriction)) {
-            sender.sendMessage(Component.text("Removed restriction: " + restriction).color(NamedTextColor.GREEN));
+            sender.sendMessage(Component.text("✓ Removed restriction: " + restriction).color(NamedTextColor.GREEN));
             saveConfig();
         } else {
             sender.sendMessage(Component.text("This restriction doesn't exist!").color(NamedTextColor.YELLOW));
@@ -268,48 +332,105 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         return true;
     }
 
-    private boolean handlePotionClear(CommandSender sender) {
-        int count = restrictedPotionEffects.size();
+    private boolean handleClear(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /restrictions clear <potions|all>").color(NamedTextColor.RED));
+            return true;
+        }
+
+        String target = args[1].toLowerCase();
+        return switch (target) {
+            case "potions", "potion" -> {
+                int count = restrictedPotionEffects.size();
+                restrictedPotionEffects.clear();
+                sender.sendMessage(Component.text("✓ Cleared " + count + " potion restriction(s)").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            case "all" -> {
+                int count = restrictedPotionEffects.size();
+                restrictedPotionEffects.clear();
+                enderPearlsRestricted = false;
+                fireworksRestricted = false;
+                sender.sendMessage(Component.text("✓ Cleared all restrictions (" + count + " potions + items)").color(NamedTextColor.GREEN));
+                saveConfig();
+                yield true;
+            }
+            default -> {
+                sender.sendMessage(Component.text("Unknown target: " + target).color(NamedTextColor.RED));
+                sender.sendMessage(Component.text("Available: potions, all").color(NamedTextColor.YELLOW));
+                yield true;
+            }
+        };
+    }
+
+    private boolean handleReset(CommandSender sender) {
         restrictedPotionEffects.clear();
-        sender.sendMessage(Component.text("Cleared " + count + " potion restrictions!").color(NamedTextColor.GREEN));
+        restrictedPotionEffects.add("strength:2");
+        restrictedPotionEffects.add("speed:2");
+        restrictedPotionEffects.add("poison");
+        restrictedPotionEffects.add("slowness");
+        restrictedPotionEffects.add("instant_damage");
+        restrictedPotionEffects.add("unluck");
+        restrictedPotionEffects.add("wither");
+        restrictedPotionEffects.add("weakness");
+
+        enderPearlsRestricted = true;
+        fireworksRestricted = true;
+
+        sender.sendMessage(Component.text("✓ Reset all restrictions to defaults").color(NamedTextColor.GREEN));
         saveConfig();
         return true;
     }
 
-    private boolean handlePotionList(CommandSender sender) {
-        if (restrictedPotionEffects.isEmpty()) {
-            sender.sendMessage(Component.text("No potion restrictions are active.").color(NamedTextColor.YELLOW));
-            return true;
-        }
-
-        sender.sendMessage(Component.text("=== Restricted Potions ===").color(NamedTextColor.GOLD));
-        List<String> sorted = new ArrayList<>(restrictedPotionEffects);
-        Collections.sort(sorted);
-
-        for (String restriction : sorted) {
-            sender.sendMessage(Component.text("  - " + restriction).color(NamedTextColor.GRAY));
-        }
-
-        return true;
-    }
-
     private boolean handleList(CommandSender sender) {
-        sender.sendMessage(Component.text("=== Current Restrictions ===").color(NamedTextColor.GOLD));
-        sender.sendMessage(Component.text("Ender Pearls: " + (enderPearlsRestricted ? "Restricted" : "Allowed")).color(enderPearlsRestricted ? NamedTextColor.RED : NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("Fireworks: " + (fireworksRestricted ? "Restricted" : "Allowed")).color(fireworksRestricted ? NamedTextColor.RED : NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("Restricted Potions: " + restrictedPotionEffects.size()).color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("Use '/restrictions potion list' to see potion details").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("═══ Current Restrictions ═══").color(NamedTextColor.GOLD));
+
+        sender.sendMessage(Component.text("Items:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  Ender Pearls: " + (enderPearlsRestricted ? "✗ Restricted" : "✓ Allowed"))
+                .color(enderPearlsRestricted ? NamedTextColor.RED : NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("  Fireworks: " + (fireworksRestricted ? "✗ Restricted" : "✓ Allowed"))
+                .color(fireworksRestricted ? NamedTextColor.RED : NamedTextColor.GREEN));
+
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Potions (" + restrictedPotionEffects.size() + " total):").color(NamedTextColor.YELLOW));
+
+        if (restrictedPotionEffects.isEmpty()) {
+            sender.sendMessage(Component.text("  None").color(NamedTextColor.GRAY));
+        } else {
+            List<String> sorted = new ArrayList<>(restrictedPotionEffects);
+            Collections.sort(sorted);
+            for (String restriction : sorted) {
+                sender.sendMessage(Component.text("  • " + restriction).color(NamedTextColor.GRAY));
+            }
+        }
+
         return true;
     }
 
     private void sendUsage(CommandSender sender) {
-        sender.sendMessage(Component.text("=== Item Restrictions Commands ===").color(NamedTextColor.GOLD));
-        sender.sendMessage(Component.text("/restrictions enable/disable <pearls|fireworks|all>").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("/restrictions potion add <effect> [level]").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("/restrictions potion remove <effect> [level]").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("/restrictions potion clear").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("/restrictions potion list").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("/restrictions list").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("═══ Item Restrictions ═══").color(NamedTextColor.GOLD));
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Quick Commands:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  /restrictions add <effect> [level]").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Add potion restriction").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("  /restrictions remove <effect> [level]").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Remove potion restriction").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("  /restrictions list").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Show all restrictions").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Item Controls:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  /restrictions enable <pearls|fireworks|all>").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("  /restrictions disable <pearls|fireworks|all>").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Bulk Operations:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  /restrictions clear <potions|all>").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("  /restrictions reset").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Examples:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  /restrictions add poison,weakness,wither").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("  /restrictions remove strength 2").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("  /restrictions enable pearls").color(NamedTextColor.GRAY));
     }
 
     @EventHandler
@@ -319,21 +440,18 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
         if (item == null) return;
 
-        // Check for ender pearl usage
         if (enderPearlsRestricted && item.getType() == Material.ENDER_PEARL) {
             event.setCancelled(true);
             player.sendMessage(Component.text("Ender pearls are restricted!").color(NamedTextColor.RED));
             return;
         }
 
-        // Check for firework usage
         if (fireworksRestricted && item.getType() == Material.FIREWORK_ROCKET) {
             event.setCancelled(true);
             player.sendMessage(Component.text("Fireworks are restricted!").color(NamedTextColor.RED));
             return;
         }
 
-        // Check for splash/lingering potion throwing
         if (item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION) {
             if (isPotionRestricted(item)) {
                 event.setCancelled(true);
@@ -347,7 +465,6 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         ItemStack item = event.getItem();
         Player player = event.getPlayer();
 
-        // Only check regular drinkable potions here
         if (item.getType() == Material.POTION) {
             if (isPotionRestricted(item)) {
                 event.setCancelled(true);
@@ -361,24 +478,20 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         Block block = event.getBlock();
         ItemStack item = event.getItem();
 
-        // Check if it's a dispenser or dropper
         if (!(block.getState() instanceof Dispenser) && !(block.getState() instanceof Dropper)) {
             return;
         }
 
-        // Check for ender pearl dispensing
         if (enderPearlsRestricted && item.getType() == Material.ENDER_PEARL) {
             event.setCancelled(true);
             return;
         }
 
-        // Check for firework dispensing
         if (fireworksRestricted && item.getType() == Material.FIREWORK_ROCKET) {
             event.setCancelled(true);
             return;
         }
 
-        // Check for potion dispensing (all potion types)
         if (item.getType() == Material.POTION ||
                 item.getType() == Material.SPLASH_POTION ||
                 item.getType() == Material.LINGERING_POTION) {
@@ -397,11 +510,8 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
             return false;
         }
 
-        // Check base potion type
         if (potionMeta.getBasePotionType() != null) {
             String potionName = potionMeta.getBasePotionType().name().toLowerCase();
-
-            // Extract effect and amplifier from potion type
             String effectName = extractEffectName(potionName);
             int amplifier = potionName.contains("strong") ? 1 : 0;
 
@@ -410,7 +520,6 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
             }
         }
 
-        // Check custom effects
         if (potionMeta.hasCustomEffects()) {
             for (PotionEffect effect : potionMeta.getCustomEffects()) {
                 String effectName = effect.getType().getKey().getKey().toLowerCase();
@@ -426,12 +535,10 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
     }
 
     private String extractEffectName(String potionTypeName) {
-        // Remove prefixes/suffixes
         potionTypeName = potionTypeName.replace("strong_", "")
                 .replace("long_", "")
                 .replace("_potion", "");
 
-        // Map potion type names to effect names
         return switch (potionTypeName) {
             case "strength", "increase_damage" -> "strength";
             case "swiftness" -> "speed";
@@ -444,14 +551,12 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
     private boolean isEffectRestricted(String effectName, int amplifier) {
         effectName = effectName.toLowerCase();
-        int level = amplifier + 1; // Amplifier 0 = Level 1
+        int level = amplifier + 1;
 
-        // Check for specific level restriction
         if (restrictedPotionEffects.contains(effectName + ":" + level)) {
             return true;
         }
 
-        // Check for all-level restriction
         if (restrictedPotionEffects.contains(effectName)) {
             return true;
         }
@@ -466,40 +571,72 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         }
 
         if (args.length == 1) {
-            return Arrays.asList("enable", "disable", "potion", "list")
+            return Arrays.asList("add", "remove", "enable", "disable", "clear", "list", "reset")
                     .stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }
 
         if (args.length == 2) {
-            if (args[0].equalsIgnoreCase("enable") || args[0].equalsIgnoreCase("disable")) {
+            String subCmd = args[0].toLowerCase();
+            if (subCmd.equals("enable") || subCmd.equals("disable")) {
                 return Arrays.asList("pearls", "fireworks", "all")
                         .stream()
                         .filter(s -> s.startsWith(args[1].toLowerCase()))
                         .collect(Collectors.toList());
             }
-            if (args[0].equalsIgnoreCase("potion")) {
-                return Arrays.asList("add", "remove", "clear", "list")
+            if (subCmd.equals("clear")) {
+                return Arrays.asList("potions", "all")
                         .stream()
                         .filter(s -> s.startsWith(args[1].toLowerCase()))
                         .collect(Collectors.toList());
             }
-        }
-
-        if (args.length == 3 && args[0].equalsIgnoreCase("potion")) {
-            if (args[1].equalsIgnoreCase("add") || args[1].equalsIgnoreCase("remove")) {
+            if (subCmd.equals("add")) {
                 return Arrays.stream(PotionEffectType.values())
                         .map(type -> type.getKey().getKey().toLowerCase())
-                        .filter(s -> s.startsWith(args[2].toLowerCase()))
+                        .filter(s -> s.startsWith(args[1].toLowerCase()))
+                        .sorted()
+                        .collect(Collectors.toList());
+            }
+            if (subCmd.equals("remove") || subCmd.equals("delete")) {
+                // Only show restricted effects for removal
+                return restrictedPotionEffects.stream()
+                        .map(restriction -> {
+                            // Extract base effect name from "effect:level" format
+                            if (restriction.contains(":")) {
+                                return restriction.split(":")[0];
+                            }
+                            return restriction;
+                        })
+                        .distinct()
+                        .filter(s -> s.startsWith(args[1].toLowerCase()))
                         .sorted()
                         .collect(Collectors.toList());
             }
         }
 
-        if (args.length == 4 && args[0].equalsIgnoreCase("potion")) {
-            if (args[1].equalsIgnoreCase("add") || args[1].equalsIgnoreCase("remove")) {
+        if (args.length == 3) {
+            String subCmd = args[0].toLowerCase();
+            if (subCmd.equals("add")) {
                 return Arrays.asList("1", "2", "3", "4", "5");
+            }
+            if (subCmd.equals("remove") || subCmd.equals("delete")) {
+                // Show only the levels that are restricted for this effect
+                String effectName = args[1].toLowerCase();
+                List<String> levels = new ArrayList<>();
+
+                for (String restriction : restrictedPotionEffects) {
+                    if (restriction.contains(":")) {
+                        String[] parts = restriction.split(":");
+                        if (parts[0].equals(effectName)) {
+                            levels.add(parts[1]);
+                        }
+                    }
+                }
+
+                return levels.stream()
+                        .sorted()
+                        .collect(Collectors.toList());
             }
         }
 

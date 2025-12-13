@@ -45,6 +45,8 @@ commands:
     permission: generalfeatures.broadcast
     permission-message: You don't have permission to use this command
 
+
+
 permissions:
   generalfeatures.grace:
     description: Allows controlling PvP grace period
