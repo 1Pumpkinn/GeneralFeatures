@@ -1,4 +1,4 @@
-package saturn.generalFeatures.impl;
+package saturn.ElementSmpManager.impl;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;

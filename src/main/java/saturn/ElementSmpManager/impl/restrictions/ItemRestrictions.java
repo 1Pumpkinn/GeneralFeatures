@@ -1,4 +1,4 @@
-package saturn.generalFeatures.impl.restrictions;
+package saturn.ElementSmpManager.impl.restrictions;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

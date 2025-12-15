@@ -1,4 +1,4 @@
-package saturn.generalFeatures.impl.mace;
+package saturn.ElementSmpManager.impl.mace;
 
 import org.bukkit.Material;
 import org.bukkit.entity.EnderDragon;

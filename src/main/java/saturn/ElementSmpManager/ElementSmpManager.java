@@ -1,19 +1,17 @@
-package saturn.generalFeatures;
+package saturn.ElementSmpManager;
 
-import saturn.generalFeatures.commands.BroadcastCommand;
-import saturn.generalFeatures.commands.DimensionTeleporter;
-import saturn.generalFeatures.impl.InvisibilityNameHider;
-import saturn.generalFeatures.impl.grace.GracePeriod;
-import saturn.generalFeatures.impl.mace.DisableEnchants;
-import saturn.generalFeatures.impl.mace.MaceCooldown;
-import saturn.generalFeatures.impl.restrictions.ItemRestrictions;
-import saturn.generalFeatures.impl.restrictions.dimension.DisableNether;
-import saturn.generalFeatures.impl.restrictions.dimension.EndControl;
-import saturn.generalFeatures.listeners.DisableMaceDamage;
-import saturn.generalFeatures.listeners.PlayerDeathListener;
+import saturn.ElementSmpManager.impl.InvisibilityNameHider;
+import saturn.ElementSmpManager.impl.grace.GracePeriod;
+import saturn.ElementSmpManager.impl.mace.DisableEnchants;
+import saturn.ElementSmpManager.impl.mace.MaceCooldown;
+import saturn.ElementSmpManager.impl.restrictions.ItemRestrictions;
+import saturn.ElementSmpManager.impl.restrictions.dimension.DisableNether;
+import saturn.ElementSmpManager.impl.restrictions.dimension.EndControl;
+import saturn.ElementSmpManager.listeners.DisableMaceDamage;
+import saturn.ElementSmpManager.listeners.PlayerDeathListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class GeneralFeatures extends JavaPlugin {
+public final class ElementSmpManager extends JavaPlugin {
 
     private EndControl endControl;
     private DisableNether netherControl;
@@ -56,15 +54,6 @@ public final class GeneralFeatures extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(), this);
         getServer().getPluginManager().registerEvents(new DisableMaceDamage(), this);
 
-        // Register teleport end command
-        if (getCommand("teleportend") != null) {
-            getCommand("teleportend").setExecutor(new DimensionTeleporter());
-        }
-
-        // Register broadcast command
-        if (getCommand("broadcast") != null) {
-            getCommand("broadcast").setExecutor(new BroadcastCommand());
-        }
 
         // Register item restrictions command and listener
         ItemRestrictions itemRestrictions = new ItemRestrictions(this);

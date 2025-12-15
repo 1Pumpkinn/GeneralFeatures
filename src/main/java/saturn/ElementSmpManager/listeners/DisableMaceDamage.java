@@ -1,4 +1,4 @@
-package saturn.generalFeatures.listeners;
+package saturn.ElementSmpManager.listeners;
 
 import org.bukkit.Material;
 import org.bukkit.entity.EnderDragon;

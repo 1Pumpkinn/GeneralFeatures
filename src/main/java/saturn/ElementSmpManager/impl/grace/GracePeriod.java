@@ -1,6 +1,6 @@
-package saturn.generalFeatures.impl.grace;
+package saturn.ElementSmpManager.impl.grace;
 
-import saturn.generalFeatures.impl.restrictions.dimension.DisableNether;
+import saturn.ElementSmpManager.impl.restrictions.dimension.DisableNether;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
