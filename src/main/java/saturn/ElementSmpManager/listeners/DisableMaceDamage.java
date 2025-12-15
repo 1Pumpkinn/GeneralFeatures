@@ -1,5 +1,6 @@
 package saturn.ElementSmpManager.listeners;
 
+import saturn.ElementSmpManager.commands.MaceCommand;
 import org.bukkit.Material;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
@@ -10,8 +11,19 @@ import org.bukkit.inventory.ItemStack;
 
 public class DisableMaceDamage implements Listener {
 
+    private final MaceCommand maceCommand;
+
+    public DisableMaceDamage(MaceCommand maceCommand) {
+        this.maceCommand = maceCommand;
+    }
+
     @EventHandler
     public void onMaceHitEnderDragon(EntityDamageByEntityEvent event) {
+        // Check if dragon damage is disabled
+        if (!maceCommand.isDragonDamageDisabled()) {
+            return;
+        }
+
         // Check if entity being hit is an ender dragon
         if (!(event.getEntity() instanceof EnderDragon)) return;
 

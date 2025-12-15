@@ -1,5 +1,6 @@
 package saturn.ElementSmpManager;
 
+import saturn.ElementSmpManager.commands.MaceCommand;
 import saturn.ElementSmpManager.impl.InvisibilityNameHider;
 import saturn.ElementSmpManager.impl.grace.GracePeriod;
 import saturn.ElementSmpManager.impl.mace.DisableEnchants;
@@ -16,9 +17,20 @@ public final class ElementSmpManager extends JavaPlugin {
     private EndControl endControl;
     private DisableNether netherControl;
     private GracePeriod gracePeriod;
+    private MaceCommand maceCommand;
+    private MaceCooldown maceCooldown;
+    private DisableEnchants disableEnchants;
+    private DisableMaceDamage disableMaceDamage;
 
     @Override
     public void onEnable() {
+        // Initialize mace command first (so settings are loaded)
+        maceCommand = new MaceCommand(this);
+        if (getCommand("mace") != null) {
+            getCommand("mace").setExecutor(maceCommand);
+            getCommand("mace").setTabCompleter(maceCommand);
+        }
+
         // Initialize dimension controls
         netherControl = new DisableNether(this);
         getServer().getPluginManager().registerEvents(netherControl, this);
@@ -49,11 +61,18 @@ public final class ElementSmpManager extends JavaPlugin {
 
         // Register other features
         getServer().getPluginManager().registerEvents(new InvisibilityNameHider(), this);
-        getServer().getPluginManager().registerEvents(new MaceCooldown(), this);
-        getServer().getPluginManager().registerEvents(new DisableEnchants(), this);
-        getServer().getPluginManager().registerEvents(new PlayerDeathListener(), this);
-        getServer().getPluginManager().registerEvents(new DisableMaceDamage(), this);
 
+        // Register mace features with config reference
+        maceCooldown = new MaceCooldown(maceCommand);
+        getServer().getPluginManager().registerEvents(maceCooldown, this);
+
+        disableEnchants = new DisableEnchants(maceCommand);
+        getServer().getPluginManager().registerEvents(disableEnchants, this);
+
+        getServer().getPluginManager().registerEvents(new PlayerDeathListener(), this);
+
+        disableMaceDamage = new DisableMaceDamage(maceCommand);
+        getServer().getPluginManager().registerEvents(disableMaceDamage, this);
 
         // Register item restrictions command and listener
         ItemRestrictions itemRestrictions = new ItemRestrictions(this);

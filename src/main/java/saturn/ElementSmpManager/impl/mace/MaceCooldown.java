@@ -1,5 +1,6 @@
 package saturn.ElementSmpManager.impl.mace;
 
+import saturn.ElementSmpManager.commands.MaceCommand;
 import org.bukkit.Material;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
@@ -14,11 +15,19 @@ import java.util.UUID;
 public class MaceCooldown implements Listener {
 
     private final HashMap<UUID, Long> cooldowns = new HashMap<>();
-    private static final long COOLDOWN_TIME = 45000; // 45s in ms
-    private static final int COOLDOWN_TICKS = 800;   // 45s * 20t
+    private final MaceCommand maceCommand;
+
+    public MaceCooldown(MaceCommand maceCommand) {
+        this.maceCommand = maceCommand;
+    }
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
+        // Check if cooldown is enabled
+        if (!maceCommand.isCooldownEnabled()) {
+            return;
+        }
+
         // Check if the damager is a player
         if (!(event.getDamager() instanceof Player damager)) return;
 
@@ -26,8 +35,8 @@ public class MaceCooldown implements Listener {
         ItemStack item = damager.getInventory().getItemInMainHand();
         if (item.getType() != Material.MACE) return;
 
-        // If hitting a dragon → do NOT apply cooldown
-        if (event.getEntity() instanceof EnderDragon) {
+        // If hitting a dragon and dragon is exempt → do NOT apply cooldown
+        if (event.getEntity() instanceof EnderDragon && maceCommand.isDragonExempt()) {
             return;
         }
 
@@ -36,9 +45,13 @@ public class MaceCooldown implements Listener {
 
         UUID playerId = damager.getUniqueId();
 
+        // Get cooldown time from config (convert seconds to milliseconds)
+        long cooldownTime = maceCommand.getCooldownSeconds() * 1000;
+        int cooldownTicks = (int) (maceCommand.getCooldownSeconds() * 20);
+
         // Cooldown check
         if (cooldowns.containsKey(playerId)) {
-            long timeLeft = (cooldowns.get(playerId) + COOLDOWN_TIME) - System.currentTimeMillis();
+            long timeLeft = (cooldowns.get(playerId) + cooldownTime) - System.currentTimeMillis();
 
             if (timeLeft > 0) {
                 // Still on cooldown, cancel attack
@@ -49,8 +62,8 @@ public class MaceCooldown implements Listener {
             }
         }
 
-        // Apply cooldown only if the target is NOT a dragon
-        damager.setCooldown(Material.MACE, COOLDOWN_TICKS);
+        // Apply cooldown
+        damager.setCooldown(Material.MACE, cooldownTicks);
         cooldowns.put(playerId, System.currentTimeMillis());
     }
 }

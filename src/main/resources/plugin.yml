@@ -31,6 +31,12 @@ commands:
     permission: generalfeatures.restrictions
     permission-message: You don't have permission to use this command
 
+  mace:
+    description: Configure mace settings (cooldown, enchants, dragon)
+    usage: /mace <cooldown|dragon|enchants|info> [options]
+    permission: generalfeatures.mace
+    permission-message: You don't have permission to use this command
+
   teleportend:
     description: Teleport to the End dimension
     usage: /teleportend
@@ -66,6 +72,10 @@ permissions:
 
   generalfeatures.restrictions:
     description: Allows managing game restrictions
+    default: op
+
+  generalfeatures.mace:
+    description: Allows configuring mace settings
     default: op
 
   generalfeatures.teleportend:
