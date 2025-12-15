@@ -1,5 +1,6 @@
 package saturn.ElementSmpManager.impl.mace;
 
+import saturn.ElementSmpManager.commands.MaceCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -13,8 +14,19 @@ import java.util.Map;
 
 public class DisableEnchants implements Listener {
 
+    private final MaceCommand maceCommand;
+
+    public DisableEnchants(MaceCommand maceCommand) {
+        this.maceCommand = maceCommand;
+    }
+
     @EventHandler
     public void onEnchant(EnchantItemEvent event) {
+        // Check if enchantment restrictions are enabled
+        if (!maceCommand.isEnchantRestrictionsEnabled()) {
+            return;
+        }
+
         if (event.getItem().getType() == Material.MACE) {
             // Check if any of the enchantments being added are not allowed
             for (Enchantment enchant : event.getEnchantsToAdd().keySet()) {
@@ -29,6 +41,11 @@ public class DisableEnchants implements Listener {
 
     @EventHandler
     public void onAnvilUse(PrepareAnvilEvent event) {
+        // Check if enchantment restrictions are enabled
+        if (!maceCommand.isEnchantRestrictionsEnabled()) {
+            return;
+        }
+
         ItemStack result = event.getResult();
         ItemStack first = event.getInventory().getFirstItem();
 
