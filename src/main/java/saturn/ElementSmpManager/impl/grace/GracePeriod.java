@@ -32,6 +32,7 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
     private boolean pvpEnabled = true;
     private BukkitRunnable graceTask = null;
     private final JavaPlugin plugin;
+    private final DisableNether netherControl;
 
     private File configFile;
     private FileConfiguration config;
@@ -40,6 +41,7 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
 
     public GracePeriod(JavaPlugin plugin, DisableNether netherControl) {
         this.plugin = plugin;
+        this.netherControl = netherControl;
         loadConfig();
         restoreTimers();
     }
@@ -82,16 +84,16 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
         // Restore grace period timer if it hasn't expired
         if (graceEndTime > currentTime && !pvpEnabled) {
             long remainingTime = graceEndTime - currentTime;
-            long remainingMinutes = remainingTime / (60 * 1000);
+            long remainingSeconds = remainingTime / 1000;
 
-            startGraceTimer(remainingMinutes);
+            startGraceTimer(remainingSeconds);
 
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 Bukkit.broadcast(Component.text("⚔ Grace Period Active").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 Bukkit.broadcast(Component.empty());
                 Bukkit.broadcast(Component.text("Players are protected from PvP damage").color(NamedTextColor.YELLOW));
-                Bukkit.broadcast(Component.text("Time remaining: " + formatTime(remainingMinutes)).color(NamedTextColor.GREEN));
+                Bukkit.broadcast(Component.text("Time remaining: " + formatTime(remainingSeconds)).color(NamedTextColor.GREEN));
                 Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
             });
         } else if (!pvpEnabled) {
@@ -148,13 +150,13 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
             graceTask = null;
         }
 
-        long minutes = -1; // -1 means infinite
+        long seconds = -1; // -1 means infinite
 
         if (args.length >= 2) {
-            minutes = parseTime(args[1]);
-            if (minutes == -2) { // -2 means parse error
+            seconds = parseTime(args[1]);
+            if (seconds == -2) { // -2 means parse error
                 sender.sendMessage(Component.text("Invalid time format!").color(NamedTextColor.RED));
-                sender.sendMessage(Component.text("Examples: 30m, 1h, 90m, 2h").color(NamedTextColor.YELLOW));
+                sender.sendMessage(Component.text("Examples: 30s, 5m, 30m, 1h, 90m, 2h").color(NamedTextColor.YELLOW));
                 return true;
             }
         }
@@ -167,10 +169,10 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
         Bukkit.broadcast(Component.empty());
         Bukkit.broadcast(Component.text("Players are now protected from PvP damage").color(NamedTextColor.YELLOW));
 
-        if (minutes > 0) {
-            graceEndTime = System.currentTimeMillis() + (minutes * 60 * 1000);
-            startGraceTimer(minutes);
-            Bukkit.broadcast(Component.text("Duration: " + formatTime(minutes)).color(NamedTextColor.GREEN));
+        if (seconds > 0) {
+            graceEndTime = System.currentTimeMillis() + (seconds * 1000);
+            startGraceTimer(seconds);
+            Bukkit.broadcast(Component.text("Duration: " + formatTime(seconds)).color(NamedTextColor.GREEN));
         } else {
             graceEndTime = -1;
             Bukkit.broadcast(Component.text("Duration: Indefinite").color(NamedTextColor.GREEN));
@@ -194,18 +196,8 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
             graceTask = null;
         }
 
-        pvpEnabled = true;
-        graceEndTime = -1;
-
-        // Broadcast to everyone
-        Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
-        Bukkit.broadcast(Component.text("⚔ Grace Period Ended").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
-        Bukkit.broadcast(Component.empty());
-        Bukkit.broadcast(Component.text("PvP is now enabled!").color(NamedTextColor.YELLOW));
-        Bukkit.broadcast(Component.text("Players can now damage each other").color(NamedTextColor.GRAY));
-        Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
-
-        saveConfig();
+        // End the grace period
+        endGracePeriod();
         return true;
     }
 
@@ -224,8 +216,8 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
             if (graceEndTime > 0) {
                 long remainingTime = graceEndTime - System.currentTimeMillis();
                 if (remainingTime > 0) {
-                    long remainingMinutes = remainingTime / (60 * 1000);
-                    sender.sendMessage(Component.text("Time remaining: " + formatTime(remainingMinutes)).color(NamedTextColor.GREEN));
+                    long remainingSeconds = remainingTime / 1000;
+                    sender.sendMessage(Component.text("Time remaining: " + formatTime(remainingSeconds)).color(NamedTextColor.GREEN));
                 }
             } else {
                 sender.sendMessage(Component.text("Duration: Indefinite").color(NamedTextColor.GREEN));
@@ -235,28 +227,38 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
         return true;
     }
 
-    private void startGraceTimer(long minutes) {
-        long ticks = minutes * 60 * 20;
+    private void startGraceTimer(long seconds) {
+        long ticks = seconds * 20;
 
         graceTask = new BukkitRunnable() {
             @Override
             public void run() {
-                pvpEnabled = true;
-                graceEndTime = -1;
-
-                Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
-                Bukkit.broadcast(Component.text("⚔ Grace Period Ended").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
-                Bukkit.broadcast(Component.empty());
-                Bukkit.broadcast(Component.text("PvP is now enabled!").color(NamedTextColor.YELLOW));
-                Bukkit.broadcast(Component.text("Players can now damage each other").color(NamedTextColor.GRAY));
-                Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
-
-                graceTask = null;
-                saveConfig();
+                // Automatically disable grace period when timer expires
+                endGracePeriod();
             }
         };
 
         graceTask.runTaskLater(plugin, ticks);
+    }
+
+    private void endGracePeriod() {
+        pvpEnabled = true;
+        graceEndTime = -1;
+
+        // Notify nether control that grace period ended
+        if (netherControl != null) {
+            netherControl.onGracePeriodEnd();
+        }
+
+        Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+        Bukkit.broadcast(Component.text("⚔ Grace Period Ended").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+        Bukkit.broadcast(Component.empty());
+        Bukkit.broadcast(Component.text("PvP is now enabled!").color(NamedTextColor.YELLOW));
+        Bukkit.broadcast(Component.text("Players can now damage each other").color(NamedTextColor.GRAY));
+        Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+
+        graceTask = null;
+        saveConfig();
     }
 
     private long parseTime(String timeStr) {
@@ -264,34 +266,55 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
             String numericPart;
             long multiplier = 1;
 
-            if (timeStr.endsWith("m")) {
+            if (timeStr.endsWith("s")) {
                 numericPart = timeStr.substring(0, timeStr.length() - 1);
                 multiplier = 1;
+                // Convert seconds to minutes (fractional)
+                long seconds = Long.parseLong(numericPart);
+                return seconds; // Return seconds, will be converted properly
+            } else if (timeStr.endsWith("m")) {
+                numericPart = timeStr.substring(0, timeStr.length() - 1);
+                multiplier = 60; // minutes to seconds
             } else if (timeStr.endsWith("h")) {
                 numericPart = timeStr.substring(0, timeStr.length() - 1);
-                multiplier = 60;
+                multiplier = 3600; // hours to seconds
             } else {
                 numericPart = timeStr;
+                multiplier = 60; // default to minutes
             }
 
             long value = Long.parseLong(numericPart) * multiplier;
-            return value;
+            return value; // Return total seconds
         } catch (NumberFormatException e) {
             return -2;
         }
     }
 
-    private String formatTime(long minutes) {
-        if (minutes >= 60) {
-            long hours = minutes / 60;
-            long remainingMinutes = minutes % 60;
-            if (remainingMinutes == 0) {
+    private String formatTime(long seconds) {
+        if (seconds >= 3600) {
+            long hours = seconds / 3600;
+            long remainingMinutes = (seconds % 3600) / 60;
+            long remainingSeconds = seconds % 60;
+
+            if (remainingMinutes == 0 && remainingSeconds == 0) {
                 return hours + " hour" + (hours != 1 ? "s" : "");
-            } else {
+            } else if (remainingSeconds == 0) {
                 return hours + " hour" + (hours != 1 ? "s" : "") + " and " + remainingMinutes + " minute" + (remainingMinutes != 1 ? "s" : "");
+            } else if (remainingMinutes == 0) {
+                return hours + " hour" + (hours != 1 ? "s" : "") + " and " + remainingSeconds + " second" + (remainingSeconds != 1 ? "s" : "");
+            } else {
+                return hours + "h " + remainingMinutes + "m " + remainingSeconds + "s";
+            }
+        } else if (seconds >= 60) {
+            long minutes = seconds / 60;
+            long remainingSeconds = seconds % 60;
+            if (remainingSeconds == 0) {
+                return minutes + " minute" + (minutes != 1 ? "s" : "");
+            } else {
+                return minutes + " minute" + (minutes != 1 ? "s" : "") + " and " + remainingSeconds + " second" + (remainingSeconds != 1 ? "s" : "");
             }
         } else {
-            return minutes + " minute" + (minutes != 1 ? "s" : "");
+            return seconds + " second" + (seconds != 1 ? "s" : "");
         }
     }
 
@@ -304,7 +327,7 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
         sender.sendMessage(Component.text("Commands:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
         sender.sendMessage(Component.text("  /grace enable [time]").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.text("    Enable PvP protection").color(NamedTextColor.GRAY));
-        sender.sendMessage(Component.text("    Time is optional (e.g., 30m, 1h, 2h)").color(NamedTextColor.DARK_GRAY));
+        sender.sendMessage(Component.text("    Time is optional (e.g., 30s, 5m, 30m, 1h, 2h)").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("    No time = indefinite").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("  /grace disable").color(NamedTextColor.WHITE));
@@ -346,7 +369,7 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("enable")) {
-            return Arrays.asList("30m", "1h", "2h", "3h");
+            return Arrays.asList("30s", "1m", "5m", "30m", "1h", "2h", "3h");
         }
 
         return Collections.emptyList();

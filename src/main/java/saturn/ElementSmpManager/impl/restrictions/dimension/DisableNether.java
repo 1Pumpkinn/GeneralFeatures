@@ -1,5 +1,6 @@
 package saturn.ElementSmpManager.impl.restrictions.dimension;
 
+import saturn.ElementSmpManager.impl.grace.GracePeriod;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -34,15 +35,18 @@ import java.util.stream.Collectors;
 public class DisableNether implements CommandExecutor, TabCompleter, Listener {
 
     private final JavaPlugin plugin;
+    private final GracePeriod gracePeriod;
     private File configFile;
     private FileConfiguration config;
 
     private boolean netherDisabled = false;
     private BukkitRunnable netherTask = null;
     private long netherEndTime = -1;
+    private boolean syncedWithGrace = false;
 
-    public DisableNether(JavaPlugin plugin) {
+    public DisableNether(JavaPlugin plugin, GracePeriod gracePeriod) {
         this.plugin = plugin;
+        this.gracePeriod = gracePeriod;
         loadConfig();
         restoreState();
     }
@@ -68,6 +72,7 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
     private void saveConfig() {
         config.set("nether.disabled", netherDisabled);
         config.set("nether.end-time", netherEndTime);
+        config.set("nether.synced-with-grace", syncedWithGrace);
 
         try {
             config.save(configFile);
@@ -79,21 +84,31 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
     private void restoreState() {
         netherDisabled = config.getBoolean("nether.disabled", false);
         netherEndTime = config.getLong("nether.end-time", -1);
+        syncedWithGrace = config.getBoolean("nether.synced-with-grace", false);
 
         long currentTime = System.currentTimeMillis();
 
         if (netherDisabled) {
-            if (netherEndTime > currentTime) {
+            if (syncedWithGrace) {
+                // Will be managed by grace period
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+                    Bukkit.broadcast(Component.text("🔥 Nether Access Disabled").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+                    Bukkit.broadcast(Component.empty());
+                    Bukkit.broadcast(Component.text("Synced with Grace Period").color(NamedTextColor.YELLOW));
+                    Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+                });
+            } else if (netherEndTime > currentTime) {
                 long remainingTime = netherEndTime - currentTime;
-                long remainingMinutes = remainingTime / (60 * 1000);
+                long remainingSeconds = remainingTime / 1000;
 
-                startNetherTimer(remainingMinutes);
+                startNetherTimer(remainingSeconds);
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
                     Bukkit.broadcast(Component.text("🔥 Nether Access Disabled").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
                     Bukkit.broadcast(Component.empty());
-                    Bukkit.broadcast(Component.text("Time remaining: " + formatTime(remainingMinutes)).color(NamedTextColor.YELLOW));
+                    Bukkit.broadcast(Component.text("Time remaining: " + formatTime(remainingSeconds)).color(NamedTextColor.YELLOW));
                     Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
                 });
             } else if (netherEndTime == -1) {
@@ -107,6 +122,7 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
             } else {
                 netherDisabled = false;
                 netherEndTime = -1;
+                syncedWithGrace = false;
             }
         }
 
@@ -149,13 +165,34 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
             netherTask = null;
         }
 
-        long minutes = -1;
+        // Check for sync_with_grace argument
+        if (args.length >= 2 && args[1].equalsIgnoreCase("sync_with_grace")) {
+            netherDisabled = true;
+            syncedWithGrace = true;
+            netherEndTime = -1;
+            teleportPlayersFromNether();
+
+            Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+            Bukkit.broadcast(Component.text("🔥 Nether Access Disabled").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+            Bukkit.broadcast(Component.empty());
+            Bukkit.broadcast(Component.text("Players cannot enter the Nether").color(NamedTextColor.YELLOW));
+            Bukkit.broadcast(Component.text("Duration: Synced with Grace Period").color(NamedTextColor.AQUA));
+            Bukkit.broadcast(Component.text("The Nether will re-enable when grace ends").color(NamedTextColor.GRAY));
+            Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.RED).decorate(TextDecoration.BOLD));
+
+            saveConfig();
+            return true;
+        }
+
+        // Regular disable logic
+        syncedWithGrace = false;
+        long seconds = -1;
 
         if (args.length >= 2) {
-            minutes = parseTime(args[1]);
-            if (minutes == -2) {
+            seconds = parseTime(args[1]);
+            if (seconds == -2) {
                 sender.sendMessage(Component.text("Invalid time format!").color(NamedTextColor.RED));
-                sender.sendMessage(Component.text("Examples: 30m, 1h, 90m, 2h").color(NamedTextColor.YELLOW));
+                sender.sendMessage(Component.text("Examples: 30s, 5m, 30m, 1h, 90m, 2h, sync_with_grace").color(NamedTextColor.YELLOW));
                 return true;
             }
         }
@@ -168,10 +205,10 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
         Bukkit.broadcast(Component.empty());
         Bukkit.broadcast(Component.text("Players cannot enter the Nether").color(NamedTextColor.YELLOW));
 
-        if (minutes > 0) {
-            netherEndTime = System.currentTimeMillis() + (minutes * 60 * 1000);
-            startNetherTimer(minutes);
-            Bukkit.broadcast(Component.text("Duration: " + formatTime(minutes)).color(NamedTextColor.GREEN));
+        if (seconds > 0) {
+            netherEndTime = System.currentTimeMillis() + (seconds * 1000);
+            startNetherTimer(seconds);
+            Bukkit.broadcast(Component.text("Duration: " + formatTime(seconds)).color(NamedTextColor.GREEN));
         } else {
             netherEndTime = -1;
             Bukkit.broadcast(Component.text("Duration: Indefinite").color(NamedTextColor.GREEN));
@@ -196,6 +233,7 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
 
         netherDisabled = false;
         netherEndTime = -1;
+        syncedWithGrace = false;
 
         Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         Bukkit.broadcast(Component.text("🔥 Nether Access Enabled").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
@@ -215,11 +253,13 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
                     .append(Component.text("Disabled").color(NamedTextColor.RED)));
             sender.sendMessage(Component.text("Players cannot enter the Nether").color(NamedTextColor.YELLOW));
 
-            if (netherEndTime > 0) {
+            if (syncedWithGrace) {
+                sender.sendMessage(Component.text("Duration: Synced with Grace Period").color(NamedTextColor.AQUA));
+            } else if (netherEndTime > 0) {
                 long remainingTime = netherEndTime - System.currentTimeMillis();
                 if (remainingTime > 0) {
-                    long remainingMinutes = remainingTime / (60 * 1000);
-                    sender.sendMessage(Component.text("Time remaining: " + formatTime(remainingMinutes)).color(NamedTextColor.GREEN));
+                    long remainingSeconds = remainingTime / 1000;
+                    sender.sendMessage(Component.text("Time remaining: " + formatTime(remainingSeconds)).color(NamedTextColor.GREEN));
                 }
             } else {
                 sender.sendMessage(Component.text("Duration: Indefinite").color(NamedTextColor.GREEN));
@@ -233,14 +273,15 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
         return true;
     }
 
-    private void startNetherTimer(long minutes) {
-        long ticks = minutes * 60 * 20;
+    private void startNetherTimer(long seconds) {
+        long ticks = seconds * 20;
 
         netherTask = new BukkitRunnable() {
             @Override
             public void run() {
                 netherDisabled = false;
                 netherEndTime = -1;
+                syncedWithGrace = false;
 
                 Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
                 Bukkit.broadcast(Component.text("🔥 Nether Access Enabled").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
@@ -283,33 +324,51 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
             String numericPart;
             long multiplier = 1;
 
-            if (timeStr.endsWith("m")) {
+            if (timeStr.endsWith("s")) {
                 numericPart = timeStr.substring(0, timeStr.length() - 1);
-                multiplier = 1;
+                multiplier = 1; // seconds
+            } else if (timeStr.endsWith("m")) {
+                numericPart = timeStr.substring(0, timeStr.length() - 1);
+                multiplier = 60; // minutes to seconds
             } else if (timeStr.endsWith("h")) {
                 numericPart = timeStr.substring(0, timeStr.length() - 1);
-                multiplier = 60;
+                multiplier = 3600; // hours to seconds
             } else {
                 numericPart = timeStr;
+                multiplier = 60; // default to minutes
             }
 
-            return Long.parseLong(numericPart) * multiplier;
+            return Long.parseLong(numericPart) * multiplier; // Return total seconds
         } catch (NumberFormatException e) {
             return -2;
         }
     }
 
-    private String formatTime(long minutes) {
-        if (minutes >= 60) {
-            long hours = minutes / 60;
-            long remainingMinutes = minutes % 60;
-            if (remainingMinutes == 0) {
+    private String formatTime(long seconds) {
+        if (seconds >= 3600) {
+            long hours = seconds / 3600;
+            long remainingMinutes = (seconds % 3600) / 60;
+            long remainingSeconds = seconds % 60;
+
+            if (remainingMinutes == 0 && remainingSeconds == 0) {
                 return hours + " hour" + (hours != 1 ? "s" : "");
-            } else {
+            } else if (remainingSeconds == 0) {
                 return hours + " hour" + (hours != 1 ? "s" : "") + " and " + remainingMinutes + " minute" + (remainingMinutes != 1 ? "s" : "");
+            } else if (remainingMinutes == 0) {
+                return hours + " hour" + (hours != 1 ? "s" : "") + " and " + remainingSeconds + " second" + (remainingSeconds != 1 ? "s" : "");
+            } else {
+                return hours + "h " + remainingMinutes + "m " + remainingSeconds + "s";
+            }
+        } else if (seconds >= 60) {
+            long minutes = seconds / 60;
+            long remainingSeconds = seconds % 60;
+            if (remainingSeconds == 0) {
+                return minutes + " minute" + (minutes != 1 ? "s" : "");
+            } else {
+                return minutes + " minute" + (minutes != 1 ? "s" : "") + " and " + remainingSeconds + " second" + (remainingSeconds != 1 ? "s" : "");
             }
         } else {
-            return minutes + " minute" + (minutes != 1 ? "s" : "");
+            return seconds + " second" + (seconds != 1 ? "s" : "");
         }
     }
 
@@ -322,8 +381,11 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
         sender.sendMessage(Component.text("Commands:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
         sender.sendMessage(Component.text("  /nether disable [time]").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.text("    Block access to the Nether").color(NamedTextColor.GRAY));
-        sender.sendMessage(Component.text("    Time is optional (e.g., 30m, 1h, 2h)").color(NamedTextColor.DARK_GRAY));
+        sender.sendMessage(Component.text("    Time is optional (e.g., 30s, 5m, 30m, 1h, 2h)").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("    No time = indefinite").color(NamedTextColor.DARK_GRAY));
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("  /nether disable sync_with_grace").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Disable Nether until grace period ends").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("  /nether enable").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.text("    Allow access to the Nether").color(NamedTextColor.GRAY));
@@ -336,6 +398,8 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
         sender.sendMessage(Component.text("    → Disable Nether indefinitely").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("  /nether disable 1h").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("    → Disable Nether for 1 hour").color(NamedTextColor.DARK_GRAY));
+        sender.sendMessage(Component.text("  /nether disable sync_with_grace").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    → Sync with grace period").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("  /nether enable").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("    → Enable Nether access").color(NamedTextColor.DARK_GRAY));
     }
@@ -382,7 +446,10 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("disable")) {
-            return Arrays.asList("30m", "1h", "2h", "3h");
+            return Arrays.asList("sync_with_grace", "30s", "1m", "5m", "30m", "1h", "2h", "3h")
+                    .stream()
+                    .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
         }
 
         return Collections.emptyList();
@@ -393,6 +460,23 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
             netherTask.cancel();
         }
         saveConfig();
+    }
+
+    // Method to be called by GracePeriod when it ends
+    public void onGracePeriodEnd() {
+        if (syncedWithGrace && netherDisabled) {
+            netherDisabled = false;
+            netherEndTime = -1;
+            syncedWithGrace = false;
+
+            Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+            Bukkit.broadcast(Component.text("🔥 Nether Access Enabled").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+            Bukkit.broadcast(Component.empty());
+            Bukkit.broadcast(Component.text("Grace period ended - Nether is now accessible").color(NamedTextColor.YELLOW));
+            Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+
+            saveConfig();
+        }
     }
 
     // Legacy methods for backward compatibility
@@ -406,5 +490,9 @@ public class DisableNether implements CommandExecutor, TabCompleter, Listener {
 
     public boolean isNetherDisabled() {
         return netherDisabled;
+    }
+
+    public boolean isSyncedWithGrace() {
+        return syncedWithGrace;
     }
 }

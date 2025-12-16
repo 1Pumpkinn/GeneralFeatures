@@ -31,8 +31,9 @@ public final class ElementSmpManager extends JavaPlugin {
             getCommand("mace").setTabCompleter(maceCommand);
         }
 
-        // Initialize dimension controls
-        netherControl = new DisableNether(this);
+        // Initialize dimension controls (nether needs grace period reference)
+        // Create nether control first with null grace period
+        netherControl = new DisableNether(this, null);
         getServer().getPluginManager().registerEvents(netherControl, this);
 
         endControl = new EndControl(this);
