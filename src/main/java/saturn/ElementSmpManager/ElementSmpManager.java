@@ -9,6 +9,7 @@ import saturn.ElementSmpManager.impl.restrictions.ItemRestrictions;
 import saturn.ElementSmpManager.impl.restrictions.dimension.DisableNether;
 import saturn.ElementSmpManager.impl.restrictions.dimension.EndControl;
 import saturn.ElementSmpManager.listeners.DisableMaceDamage;
+import saturn.ElementSmpManager.listeners.DisableMaceUsage;
 import saturn.ElementSmpManager.listeners.PlayerDeathListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -74,6 +75,9 @@ public final class ElementSmpManager extends JavaPlugin {
 
         disableMaceDamage = new DisableMaceDamage(maceCommand);
         getServer().getPluginManager().registerEvents(disableMaceDamage, this);
+
+        // NEW: Register mace usage disabler
+        getServer().getPluginManager().registerEvents(new DisableMaceUsage(maceCommand), this);
 
         // Register item restrictions command and listener
         ItemRestrictions itemRestrictions = new ItemRestrictions(this);

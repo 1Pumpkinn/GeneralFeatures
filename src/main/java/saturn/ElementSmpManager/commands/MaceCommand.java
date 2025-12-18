@@ -32,6 +32,7 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
     private boolean cooldownEnabled = true;
     private boolean enchantRestrictionsEnabled = true;
     private boolean dragonDamageDisabled = true;
+    private boolean maceDisabled = false; // NEW: complete mace disable
 
     public MaceCommand(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -60,6 +61,7 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
         cooldownEnabled = config.getBoolean("mace.cooldown-enabled", true);
         enchantRestrictionsEnabled = config.getBoolean("mace.enchant-restrictions-enabled", true);
         dragonDamageDisabled = config.getBoolean("mace.dragon-damage-disabled", true);
+        maceDisabled = config.getBoolean("mace.disabled", false); // NEW
 
         saveConfig();
     }
@@ -70,6 +72,7 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
         config.set("mace.cooldown-enabled", cooldownEnabled);
         config.set("mace.enchant-restrictions-enabled", enchantRestrictionsEnabled);
         config.set("mace.dragon-damage-disabled", dragonDamageDisabled);
+        config.set("mace.disabled", maceDisabled); // NEW
 
         try {
             config.save(configFile);
@@ -97,6 +100,8 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
             case "cooldown" -> handleCooldown(sender, args);
             case "dragon" -> handleDragon(sender, args);
             case "enchants" -> handleEnchants(sender, args);
+            case "disable", "off" -> handleDisable(sender); // NEW
+            case "enable", "on" -> handleEnable(sender); // NEW
             case "info", "status" -> handleInfo(sender);
             case "reload" -> handleReload(sender);
             case "reset" -> handleReset(sender);
@@ -105,6 +110,24 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
                 yield true;
             }
         };
+    }
+
+    // NEW: Handle complete mace disable
+    private boolean handleDisable(CommandSender sender) {
+        maceDisabled = true;
+        saveConfig();
+        sender.sendMessage(Component.text("✓ Mace has been completely disabled").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("  Players cannot use maces at all").color(NamedTextColor.GRAY));
+        return true;
+    }
+
+    // NEW: Handle mace enable
+    private boolean handleEnable(CommandSender sender) {
+        maceDisabled = false;
+        saveConfig();
+        sender.sendMessage(Component.text("✓ Mace has been enabled").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("  Players can now use maces").color(NamedTextColor.GRAY));
+        return true;
     }
 
     private boolean handleCooldown(CommandSender sender, String[] args) {
@@ -246,6 +269,13 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Component.text("═══════════════════════════════").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
         sender.sendMessage(Component.empty());
 
+        // NEW: Show mace disabled status
+        sender.sendMessage(Component.text("Mace Status:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+        sender.sendMessage(Component.text("  Completely Disabled: ").color(NamedTextColor.GRAY)
+                .append(Component.text(maceDisabled ? "✓ Yes" : "✗ No")
+                        .color(maceDisabled ? NamedTextColor.RED : NamedTextColor.GREEN)));
+
+        sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Cooldown Settings:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
         sender.sendMessage(Component.text("  Enabled: ").color(NamedTextColor.GRAY)
                 .append(Component.text(cooldownEnabled ? "✓ Yes" : "✗ No")
@@ -288,9 +318,11 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
         cooldownEnabled = true;
         enchantRestrictionsEnabled = true;
         dragonDamageDisabled = true;
+        maceDisabled = false; // NEW
         saveConfig();
 
         sender.sendMessage(Component.text("✓ Mace configuration reset to defaults").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("  Mace: Enabled").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  Cooldown: 45s (enabled)").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  Dragon exempt: Yes").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  Dragon damage: Disabled").color(NamedTextColor.GRAY));
@@ -304,6 +336,14 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Component.text("═══════════════════════════════").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
         sender.sendMessage(Component.empty());
 
+        // NEW: Mace Enable/Disable
+        sender.sendMessage(Component.text("Mace Control:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+        sender.sendMessage(Component.text("  /mace enable").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Enable mace usage").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("  /mace disable").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Completely disable mace usage").color(NamedTextColor.GRAY));
+
+        sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Cooldown Management:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
         sender.sendMessage(Component.text("  /mace cooldown enable").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.text("    Enable mace attack cooldown").color(NamedTextColor.GRAY));
@@ -335,6 +375,8 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
 
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Examples:").color(NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+        sender.sendMessage(Component.text("  /mace disable").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    → Completely disable mace").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("  /mace cooldown set 30").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("    → Set 30 second cooldown").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("  /mace dragon exempt disable").color(NamedTextColor.GRAY));
@@ -350,7 +392,7 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return Arrays.asList("cooldown", "dragon", "enchants", "info", "reload", "reset")
+            return Arrays.asList("enable", "disable", "cooldown", "dragon", "enchants", "info", "reload", "reset") // NEW: added enable/disable
                     .stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
@@ -413,5 +455,9 @@ public class MaceCommand implements CommandExecutor, TabCompleter {
 
     public boolean isDragonDamageDisabled() {
         return dragonDamageDisabled;
+    }
+
+    public boolean isMaceDisabled() {
+        return maceDisabled;
     }
 }
