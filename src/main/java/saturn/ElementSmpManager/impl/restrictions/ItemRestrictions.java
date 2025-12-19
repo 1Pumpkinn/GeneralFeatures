@@ -39,6 +39,7 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
     private boolean enderPearlsRestricted = true;
     private boolean fireworksRestricted = true;
+    private boolean potionsRestricted = false; // NEW: Global potion restriction toggle
     private Set<String> restrictedPotionEffects = new HashSet<>();
 
     public ItemRestrictions(JavaPlugin plugin) {
@@ -68,19 +69,36 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
         enderPearlsRestricted = config.getBoolean("restrictions.ender-pearls", true);
         fireworksRestricted = config.getBoolean("restrictions.fireworks", true);
+        potionsRestricted = config.getBoolean("restrictions.potions-disabled", false); // NEW
 
         List<String> loadedEffects = config.getStringList("restrictions.potion-effects");
         restrictedPotionEffects = new HashSet<>(loadedEffects);
 
         if (restrictedPotionEffects.isEmpty()) {
+            // Damage/Combat potions
             restrictedPotionEffects.add("strength:2");
-            restrictedPotionEffects.add("speed:2");
-            restrictedPotionEffects.add("poison");
-            restrictedPotionEffects.add("slowness");
             restrictedPotionEffects.add("instant_damage");
-            restrictedPotionEffects.add("unluck");
             restrictedPotionEffects.add("wither");
+
+            // Speed/Movement potions
+            restrictedPotionEffects.add("speed:2");
+            restrictedPotionEffects.add("slowness");
+            restrictedPotionEffects.add("slowness:4"); // Turtle Master component
+
+            // Debuff potions
+            restrictedPotionEffects.add("poison");
             restrictedPotionEffects.add("weakness");
+            restrictedPotionEffects.add("unluck");
+
+            // Defensive potions (optional - comment out if you want to allow these)
+            restrictedPotionEffects.add("resistance:3"); // Turtle Master component
+
+            // New 1.21 potions
+            restrictedPotionEffects.add("wind_charged");
+            restrictedPotionEffects.add("weaving");
+            restrictedPotionEffects.add("oozing");
+            restrictedPotionEffects.add("infested");
+
             saveConfig();
         }
     }
@@ -88,6 +106,7 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
     private void saveConfig() {
         config.set("restrictions.ender-pearls", enderPearlsRestricted);
         config.set("restrictions.fireworks", fireworksRestricted);
+        config.set("restrictions.potions-disabled", potionsRestricted); // NEW
         config.set("restrictions.potion-effects", new ArrayList<>(restrictedPotionEffects));
 
         try {
@@ -164,7 +183,7 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
     private boolean handleDisable(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /restrictions disable <pearls|fireworks|all>").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("Usage: /restrictions disable <pearls|fireworks|potions|all>").color(NamedTextColor.RED));
             return true;
         }
 
@@ -182,16 +201,24 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
                 saveConfig();
                 yield true;
             }
+            case "potions", "potion" -> {
+                potionsRestricted = true;
+                sender.sendMessage(Component.text("✓ All potions are now completely disabled").color(NamedTextColor.GREEN));
+                sender.sendMessage(Component.text("  Players cannot use any potions").color(NamedTextColor.GRAY));
+                saveConfig();
+                yield true;
+            }
             case "all" -> {
                 enderPearlsRestricted = false;
                 fireworksRestricted = false;
+                potionsRestricted = false;
                 sender.sendMessage(Component.text("✓ All items are now allowed").color(NamedTextColor.GREEN));
                 saveConfig();
                 yield true;
             }
             default -> {
                 sender.sendMessage(Component.text("Unknown item: " + item).color(NamedTextColor.RED));
-                sender.sendMessage(Component.text("Available: pearls, fireworks, all").color(NamedTextColor.YELLOW));
+                sender.sendMessage(Component.text("Available: pearls, fireworks, potions, all").color(NamedTextColor.YELLOW));
                 yield true;
             }
         };
@@ -334,16 +361,16 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
     private boolean handleClear(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /restrictions clear <potions|all>").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("Usage: /restrictions clear <effects|all>").color(NamedTextColor.RED));
             return true;
         }
 
         String target = args[1].toLowerCase();
         return switch (target) {
-            case "potions", "potion" -> {
+            case "effects", "effect" -> {
                 int count = restrictedPotionEffects.size();
                 restrictedPotionEffects.clear();
-                sender.sendMessage(Component.text("✓ Cleared " + count + " potion restriction(s)").color(NamedTextColor.GREEN));
+                sender.sendMessage(Component.text("✓ Cleared " + count + " potion effect restriction(s)").color(NamedTextColor.GREEN));
                 saveConfig();
                 yield true;
             }
@@ -352,13 +379,14 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
                 restrictedPotionEffects.clear();
                 enderPearlsRestricted = false;
                 fireworksRestricted = false;
-                sender.sendMessage(Component.text("✓ Cleared all restrictions (" + count + " potions + items)").color(NamedTextColor.GREEN));
+                potionsRestricted = false;
+                sender.sendMessage(Component.text("✓ Cleared all restrictions (" + count + " effects + items)").color(NamedTextColor.GREEN));
                 saveConfig();
                 yield true;
             }
             default -> {
                 sender.sendMessage(Component.text("Unknown target: " + target).color(NamedTextColor.RED));
-                sender.sendMessage(Component.text("Available: potions, all").color(NamedTextColor.YELLOW));
+                sender.sendMessage(Component.text("Available: effects, all").color(NamedTextColor.YELLOW));
                 yield true;
             }
         };
@@ -366,17 +394,34 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
     private boolean handleReset(CommandSender sender) {
         restrictedPotionEffects.clear();
+
+        // Damage/Combat potions
         restrictedPotionEffects.add("strength:2");
-        restrictedPotionEffects.add("speed:2");
-        restrictedPotionEffects.add("poison");
-        restrictedPotionEffects.add("slowness");
         restrictedPotionEffects.add("instant_damage");
-        restrictedPotionEffects.add("unluck");
         restrictedPotionEffects.add("wither");
+
+        // Speed/Movement potions
+        restrictedPotionEffects.add("speed:2");
+        restrictedPotionEffects.add("slowness");
+        restrictedPotionEffects.add("slowness:4"); // Turtle Master component
+
+        // Debuff potions
+        restrictedPotionEffects.add("poison");
         restrictedPotionEffects.add("weakness");
+        restrictedPotionEffects.add("unluck");
+
+        // Defensive potions (optional)
+        restrictedPotionEffects.add("resistance:3"); // Turtle Master component
+
+        // New 1.21 potions
+        restrictedPotionEffects.add("wind_charged");
+        restrictedPotionEffects.add("weaving");
+        restrictedPotionEffects.add("oozing");
+        restrictedPotionEffects.add("infested");
 
         enderPearlsRestricted = true;
         fireworksRestricted = true;
+        potionsRestricted = false;
 
         sender.sendMessage(Component.text("✓ Reset all restrictions to defaults").color(NamedTextColor.GREEN));
         saveConfig();
@@ -393,7 +438,12 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
                 .color(fireworksRestricted ? NamedTextColor.RED : NamedTextColor.GREEN));
 
         sender.sendMessage(Component.empty());
-        sender.sendMessage(Component.text("Potions (" + restrictedPotionEffects.size() + " total):").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("Potions:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  All Potions: " + (potionsRestricted ? "✗ Completely Disabled" : "✓ Enabled"))
+                .color(potionsRestricted ? NamedTextColor.RED : NamedTextColor.GREEN));
+
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Potion Effects (" + restrictedPotionEffects.size() + " total):").color(NamedTextColor.YELLOW));
 
         if (restrictedPotionEffects.isEmpty()) {
             sender.sendMessage(Component.text("  None").color(NamedTextColor.GRAY));
@@ -405,6 +455,11 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
             }
         }
 
+        sender.sendMessage(Component.empty());
+        sender.sendMessage(Component.text("Note:").color(NamedTextColor.AQUA));
+        sender.sendMessage(Component.text("  Turtle Master = slowness:4 + resistance:3").color(NamedTextColor.DARK_GRAY));
+        sender.sendMessage(Component.text("  Add either effect to restrict it").color(NamedTextColor.DARK_GRAY));
+
         return true;
     }
 
@@ -413,24 +468,28 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Quick Commands:").color(NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("  /restrictions add <effect> [level]").color(NamedTextColor.WHITE));
-        sender.sendMessage(Component.text("    Add potion restriction").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    Add potion effect restriction").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  /restrictions remove <effect> [level]").color(NamedTextColor.WHITE));
-        sender.sendMessage(Component.text("    Remove potion restriction").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    Remove potion effect restriction").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  /restrictions list").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.text("    Show all restrictions").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Item Controls:").color(NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("  /restrictions enable <pearls|fireworks|all>").color(NamedTextColor.WHITE));
-        sender.sendMessage(Component.text("  /restrictions disable <pearls|fireworks|all>").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("  /restrictions disable <pearls|fireworks|potions|all>").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("    Note: 'disable potions' blocks ALL potions").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Bulk Operations:").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("  /restrictions clear <potions|all>").color(NamedTextColor.WHITE));
+        sender.sendMessage(Component.text("  /restrictions clear <effects|all>").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.text("  /restrictions reset").color(NamedTextColor.WHITE));
         sender.sendMessage(Component.empty());
         sender.sendMessage(Component.text("Examples:").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("  /restrictions disable potions").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    → Completely disable all potions").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("  /restrictions add poison,weakness,wither").color(NamedTextColor.GRAY));
-        sender.sendMessage(Component.text("  /restrictions remove strength 2").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    → Restrict specific potion effects").color(NamedTextColor.DARK_GRAY));
         sender.sendMessage(Component.text("  /restrictions enable pearls").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("    → Allow ender pearls").color(NamedTextColor.DARK_GRAY));
     }
 
     @EventHandler
@@ -453,6 +512,14 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         }
 
         if (item.getType() == Material.SPLASH_POTION || item.getType() == Material.LINGERING_POTION) {
+            // Check if all potions are disabled
+            if (potionsRestricted) {
+                event.setCancelled(true);
+                player.sendMessage(Component.text("All potions are disabled!").color(NamedTextColor.RED));
+                return;
+            }
+
+            // Check specific effect restrictions
             if (isPotionRestricted(item)) {
                 event.setCancelled(true);
                 player.sendMessage(Component.text("This potion is restricted!").color(NamedTextColor.RED));
@@ -466,6 +533,14 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         Player player = event.getPlayer();
 
         if (item.getType() == Material.POTION) {
+            // Check if all potions are disabled
+            if (potionsRestricted) {
+                event.setCancelled(true);
+                player.sendMessage(Component.text("All potions are disabled!").color(NamedTextColor.RED));
+                return;
+            }
+
+            // Check specific effect restrictions
             if (isPotionRestricted(item)) {
                 event.setCancelled(true);
                 player.sendMessage(Component.text("This potion is restricted!").color(NamedTextColor.RED));
@@ -495,12 +570,33 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
         if (item.getType() == Material.POTION ||
                 item.getType() == Material.SPLASH_POTION ||
                 item.getType() == Material.LINGERING_POTION) {
+            // Check if all potions are disabled
+            if (potionsRestricted) {
+                event.setCancelled(true);
+                return;
+            }
+
+            // Check specific effect restrictions
             if (isPotionRestricted(item)) {
                 event.setCancelled(true);
             }
         }
     }
 
+    /**
+     * Checks if a potion is restricted based on its effects.
+     *
+     * NOTE: Some potions like Turtle Master give multiple effects:
+     * - Turtle Master = Slowness IV + Resistance III
+     *
+     * To restrict Turtle Master, you can either:
+     * 1. Add "slowness:4" to restrict the Slowness IV component
+     * 2. Add "resistance:3" to restrict the Resistance III component
+     * 3. Add both to ensure it's blocked regardless of which effect is checked first
+     *
+     * @param item The potion item to check
+     * @return true if the potion is restricted, false otherwise
+     */
     private boolean isPotionRestricted(ItemStack item) {
         if (restrictedPotionEffects.isEmpty()) {
             return false;
@@ -545,6 +641,13 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
             case "slowness", "slow" -> "slowness";
             case "harming", "instant_damage" -> "instant_damage";
             case "healing", "instant_health" -> "instant_health";
+            case "leaping", "jump" -> "jump_boost";
+            case "regeneration", "regen" -> "regeneration";
+            case "fire_resistance" -> "fire_resistance";
+            case "water_breathing" -> "water_breathing";
+            case "invisibility" -> "invisibility";
+            case "night_vision" -> "night_vision";
+            case "turtle_master" -> "turtle_master"; // Special case - handled by checking both effects
             default -> potionTypeName;
         };
     }
@@ -579,14 +682,20 @@ public class ItemRestrictions implements CommandExecutor, TabCompleter, Listener
 
         if (args.length == 2) {
             String subCmd = args[0].toLowerCase();
-            if (subCmd.equals("enable") || subCmd.equals("disable")) {
+            if (subCmd.equals("enable")) {
                 return Arrays.asList("pearls", "fireworks", "all")
                         .stream()
                         .filter(s -> s.startsWith(args[1].toLowerCase()))
                         .collect(Collectors.toList());
             }
+            if (subCmd.equals("disable")) {
+                return Arrays.asList("pearls", "fireworks", "potions", "all")
+                        .stream()
+                        .filter(s -> s.startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            }
             if (subCmd.equals("clear")) {
-                return Arrays.asList("potions", "all")
+                return Arrays.asList("effects", "all")
                         .stream()
                         .filter(s -> s.startsWith(args[1].toLowerCase()))
                         .collect(Collectors.toList());
