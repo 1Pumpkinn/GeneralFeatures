@@ -22,7 +22,7 @@ public class InvisibilityNameHider implements Listener {
             event.setCancelled(true);
 
             // Send the message without showing the player's name
-            Component hiddenMessage = Component.text("???", NamedTextColor.WHITE)
+            Component hiddenMessage = Component.text("??? ", NamedTextColor.WHITE)
                     .append(event.message());
 
             // Broadcast the anonymous message to all players
@@ -50,7 +50,7 @@ public class InvisibilityNameHider implements Listener {
                         .serialize(originalMessage);
 
                 String killerName = killer.getName();
-                String modifiedText = originalText.replace(killerName, "???");
+                String modifiedText = originalText.replace(killerName, "??? ");
 
                 // Set the new death message
                 event.deathMessage(Component.text(modifiedText));
@@ -66,7 +66,7 @@ public class InvisibilityNameHider implements Listener {
                         .serialize(originalMessage);
 
                 String victimName = victim.getName();
-                String modifiedText = originalText.replace(victimName, "???");
+                String modifiedText = originalText.replace(victimName, "??? ");
 
                 event.deathMessage(Component.text(modifiedText));
             }
