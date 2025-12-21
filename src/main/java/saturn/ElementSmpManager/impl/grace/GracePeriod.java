@@ -163,7 +163,7 @@ public class GracePeriod implements CommandExecutor, TabCompleter, Listener {
 
         pvpEnabled = false;
 
-        // Broadcast to everyone
+        // Broadcast to all players
         Bukkit.broadcast(Component.text("═══════════════════════════════").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
         Bukkit.broadcast(Component.text("⚔ Grace Period Enabled").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
         Bukkit.broadcast(Component.empty());
