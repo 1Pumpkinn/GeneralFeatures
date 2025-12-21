@@ -13,7 +13,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -24,7 +23,7 @@ public class ProtectionBlocker implements Listener {
     private static final int MAX_PROTECTION_LEVEL = 3;
 
     /**
-     * Prevents enchanting items with Protection IV at enchantment table
+     * Automatically downgrade Protection IV to Protection III at enchantment table
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEnchantItem(EnchantItemEvent event) {
@@ -32,18 +31,17 @@ public class ProtectionBlocker implements Listener {
 
         if (enchants.containsKey(Enchantment.PROTECTION) &&
                 enchants.get(Enchantment.PROTECTION) > MAX_PROTECTION_LEVEL) {
-            event.setCancelled(true);
+            // Downgrade to Protection III
+            enchants.put(Enchantment.PROTECTION, MAX_PROTECTION_LEVEL);
+
             event.getEnchanter().sendMessage(
-                    Component.text("✖ Protection IV is not allowed!").color(NamedTextColor.RED)
-            );
-            event.getEnchanter().sendMessage(
-                    Component.text("Maximum allowed: Protection III").color(NamedTextColor.GRAY)
+                    Component.text("⚠ Protection IV downgraded to Protection III").color(NamedTextColor.YELLOW)
             );
         }
     }
 
     /**
-     * Prevents combining items with Protection IV in anvil
+     * Automatically downgrade Protection IV to Protection III in anvil results
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onAnvilCombine(PrepareAnvilEvent event) {
@@ -58,22 +56,24 @@ public class ProtectionBlocker implements Listener {
         // Check if result has Protection IV
         if (meta.hasEnchant(Enchantment.PROTECTION) &&
                 meta.getEnchantLevel(Enchantment.PROTECTION) > MAX_PROTECTION_LEVEL) {
-            event.setResult(null);
+
+            // Downgrade to Protection III
+            meta.removeEnchant(Enchantment.PROTECTION);
+            meta.addEnchant(Enchantment.PROTECTION, MAX_PROTECTION_LEVEL, true);
+            result.setItemMeta(meta);
+            event.setResult(result);
 
             // Notify player if they're viewing the anvil
             if (event.getView().getPlayer() instanceof Player player) {
                 player.sendMessage(
-                        Component.text("✖ Cannot create items with Protection IV!").color(NamedTextColor.RED)
-                );
-                player.sendMessage(
-                        Component.text("Maximum allowed: Protection III").color(NamedTextColor.GRAY)
+                        Component.text("⚠ Protection IV downgraded to Protection III").color(NamedTextColor.YELLOW)
                 );
             }
         }
     }
 
     /**
-     * Prevents wearing armor with Protection IV
+     * Downgrade Protection IV to Protection III when trying to wear armor
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
@@ -84,76 +84,70 @@ public class ProtectionBlocker implements Listener {
         ItemStack item = event.getCurrentItem();
         ItemStack cursor = event.getCursor();
 
-        // Check the item being moved
-        if (isArmorWithProtectionIV(item) && isArmorSlot(event.getSlot(), event.getSlotType())) {
-            event.setCancelled(true);
-            player.sendMessage(
-                    Component.text("✖ You cannot wear armor with Protection IV!").color(NamedTextColor.RED)
-            );
-            return;
+        // Check the item being moved into armor slot
+        if (item != null && isArmorSlot(event.getSlot(), event.getSlotType())) {
+            downgradeProtectionIfNeeded(item, player);
         }
 
         // Check cursor item being placed in armor slot
-        if (isArmorWithProtectionIV(cursor) && isArmorSlot(event.getSlot(), event.getSlotType())) {
-            event.setCancelled(true);
-            player.sendMessage(
-                    Component.text("✖ You cannot wear armor with Protection IV!").color(NamedTextColor.RED)
-            );
+        if (cursor != null && isArmorSlot(event.getSlot(), event.getSlotType())) {
+            downgradeProtectionIfNeeded(cursor, player);
         }
     }
 
     /**
-     * Prevents equipping armor with Protection IV via right-click
+     * Downgrade Protection IV when equipping armor via right-click
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 
-        if (item == null) {
+        if (item == null || !isArmor(item.getType())) {
             return;
         }
 
-        // Check if player is trying to equip armor with Protection IV
-        if (isArmorWithProtectionIV(item) && isArmor(item.getType())) {
-            // Check if this interaction would equip the armor
-            if (event.getAction().toString().contains("RIGHT_CLICK")) {
-                event.setCancelled(true);
-                player.sendMessage(
-                        Component.text("✖ You cannot wear armor with Protection IV!").color(NamedTextColor.RED)
-                );
-            }
+        // Check if this interaction would equip the armor
+        if (event.getAction().toString().contains("RIGHT_CLICK")) {
+            downgradeProtectionIfNeeded(item, player);
         }
     }
 
     /**
-     * Prevents placing armor with Protection IV on armor stands
+     * Downgrade Protection IV when placing on armor stands
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
         ItemStack item = event.getPlayerItem();
 
-        if (isArmorWithProtectionIV(item)) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(
-                    Component.text("✖ Cannot place armor with Protection IV on armor stands!").color(NamedTextColor.RED)
-            );
+        if (item != null) {
+            downgradeProtectionIfNeeded(item, event.getPlayer());
         }
     }
 
     /**
-     * Check if an item is armor with Protection IV
+     * Helper method to downgrade Protection IV to Protection III
      */
-    private boolean isArmorWithProtectionIV(ItemStack item) {
+    private void downgradeProtectionIfNeeded(ItemStack item, Player player) {
         if (item == null || !item.hasItemMeta()) {
-            return false;
+            return;
         }
 
         ItemMeta meta = item.getItemMeta();
 
-        return isArmor(item.getType()) &&
-                meta.hasEnchant(Enchantment.PROTECTION) &&
-                meta.getEnchantLevel(Enchantment.PROTECTION) > MAX_PROTECTION_LEVEL;
+        if (!isArmor(item.getType())) {
+            return;
+        }
+
+        // Check if item has Protection IV
+        if (meta.hasEnchant(Enchantment.PROTECTION) &&
+                meta.getEnchantLevel(Enchantment.PROTECTION) > MAX_PROTECTION_LEVEL) {
+
+            // Downgrade to Protection III
+            meta.removeEnchant(Enchantment.PROTECTION);
+            meta.addEnchant(Enchantment.PROTECTION, MAX_PROTECTION_LEVEL, true);
+            item.setItemMeta(meta);
+        }
     }
 
     /**

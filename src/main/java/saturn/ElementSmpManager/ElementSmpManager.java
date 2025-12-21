@@ -6,6 +6,7 @@ import saturn.ElementSmpManager.impl.grace.GracePeriod;
 import saturn.ElementSmpManager.impl.mace.DisableEnchants;
 import saturn.ElementSmpManager.impl.mace.MaceCooldown;
 import saturn.ElementSmpManager.impl.restrictions.ItemRestrictions;
+import saturn.ElementSmpManager.impl.restrictions.ProtectionBlocker;
 import saturn.ElementSmpManager.impl.restrictions.dimension.DisableNether;
 import saturn.ElementSmpManager.impl.restrictions.dimension.EndControl;
 import saturn.ElementSmpManager.listeners.DisableMaceDamage;
@@ -86,6 +87,9 @@ public final class ElementSmpManager extends JavaPlugin {
             getCommand("restrictions").setTabCompleter(itemRestrictions);
         }
         getServer().getPluginManager().registerEvents(itemRestrictions, this);
+
+        // FIX: Register Protection IV blocker
+        getServer().getPluginManager().registerEvents(new ProtectionBlocker(), this);
 
         getLogger().info("GeneralFeatures plugin has been enabled!");
     }
