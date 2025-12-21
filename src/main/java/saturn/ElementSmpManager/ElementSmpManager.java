@@ -6,6 +6,7 @@ import saturn.ElementSmpManager.impl.grace.GracePeriod;
 import saturn.ElementSmpManager.impl.mace.DisableEnchants;
 import saturn.ElementSmpManager.impl.mace.MaceCooldown;
 import saturn.ElementSmpManager.impl.restrictions.ItemRestrictions;
+import saturn.ElementSmpManager.impl.restrictions.NetheriteArmorBlocker;
 import saturn.ElementSmpManager.impl.restrictions.ProtectionBlocker;
 import saturn.ElementSmpManager.impl.restrictions.dimension.DisableNether;
 import saturn.ElementSmpManager.impl.restrictions.dimension.EndControl;
@@ -87,9 +88,8 @@ public final class ElementSmpManager extends JavaPlugin {
             getCommand("restrictions").setTabCompleter(itemRestrictions);
         }
         getServer().getPluginManager().registerEvents(itemRestrictions, this);
-
-        // FIX: Register Protection IV blocker
         getServer().getPluginManager().registerEvents(new ProtectionBlocker(), this);
+        getServer().getPluginManager().registerEvents(new NetheriteArmorBlocker(), this);
 
         getLogger().info("GeneralFeatures plugin has been enabled!");
     }
